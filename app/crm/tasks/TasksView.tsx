@@ -101,7 +101,20 @@ export default function TasksView({ onChanged }: Props) {
 
   async function applyFilters(next: TaskFilters) {
     setFilters(next);
+    setSelectedTaskIds([]);
     await refresh(next);
+  }
+
+  function toggleTaskSelection(taskId: string) {
+    setSelectedTaskIds((current) =>
+      current.includes(taskId) ? current.filter((id) => id !== taskId) : [...current, taskId]
+    );
+  }
+
+  function toggleSelectAllVisible() {
+    const ids = tasks.filter((t) => t.status !== "completed").map((t) => t.id);
+    const allSelected = ids.length > 0 && ids.every((id) => selectedTaskIds.includes(id));
+    setSelectedTaskIds(allSelected ? [] : ids);
   }
 
   function beginCreate() {
