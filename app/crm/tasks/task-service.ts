@@ -114,3 +114,14 @@ export async function mutateTaskAsAgent(input: AgentTaskMutation): Promise<void>
   });
   if (error) throwRpc(error, "Agent task action was rejected.");
 }
+
+export async function runTaskWorkflow(taskId: string): Promise<any> {
+  const { data, error } = await crmSupabase.rpc("sav_ai_crm_run_task_workflow", {
+    p_task_id: taskId,
+  });
+  if (error) throwRpc(error, "Workflow task execution failed.");
+  if (data && data.ok === false) {
+    throw new Error(data.message || data.error || "Workflow task execution was rejected.");
+  }
+  return data;
+}
