@@ -143,10 +143,18 @@ export default function AgentsModule({focusedId}:{focusedId?:string}){
             <div><small>{current.slug}</small><h2>{detail.agent.display_name||current.name}</h2><p>{detail.agent.role_name}</p></div>
             <div className="agent-head-actions">
               {detail.permissions?.manage&&<>
-                <button onClick={()=>status("active")} disabled={current.status==="active"}><Play size={13}/>Active</button>
-                <button onClick={()=>status("paused")} disabled={current.status==="paused"}><Pause size={13}/>Pause</button>
-                <button onClick={()=>status("disabled")} disabled={current.status==="disabled"}><ShieldAlert size={13}/>Disable</button>
-                <button className="primary" onClick={save}><Save size={13}/>Save</button>
+                {current.status==="active"&&<>
+                  <button onClick={()=>status("paused")} disabled={busy}><Pause size={13}/>Pause</button>
+                  <button onClick={()=>status("disabled")} disabled={busy}><ShieldAlert size={13}/>Deactivate</button>
+                </>}
+                {current.status==="paused"&&<>
+                  <button onClick={()=>status("active")} disabled={busy}><Play size={13}/>Resume</button>
+                  <button onClick={()=>status("disabled")} disabled={busy}><ShieldAlert size={13}/>Deactivate</button>
+                </>}
+                {current.status==="disabled"&&
+                  <button onClick={()=>status("active")} disabled={busy}><Play size={13}/>Activate</button>
+                }
+                <button className="primary" onClick={save} disabled={busy}><Save size={13}/>Save</button>
               </>}
               <Link href={`/crm/agents/${current.id}`}>Open Detail</Link>
             </div>
