@@ -117,6 +117,31 @@ export default function TasksView({ onChanged }: Props) {
     setSelectedTaskIds(allSelected ? [] : ids);
   }
 
+  async function applyBulkStatus(status: TaskStatus) {
+    if (!selectedTaskIds.length) return;
+    setSaving(true);
+    setError("");
+    try {
+      for (const taskId of selectedTaskIds) {
+        await setTaskStatus(taskId, status);
+      }
+      setSelectedTaskIds([]);
+      setRunMessage(
+        status === "pending"
+          ? "Selected tasks paused."
+          : status === "cancelled"
+            ? "Selected tasks cancelled."
+            : "Selected tasks resumed."
+      );
+      await refresh();
+      await onChanged?.();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Bulk task action failed.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function beginCreate() {
     const defaultMember = context?.member?.id || "";
     setEditingId(null);
