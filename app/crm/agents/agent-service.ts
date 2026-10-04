@@ -43,7 +43,7 @@ export async function updateAgent(id:string,input:{
   return api<{ok:true}>(`/api/agents/${id}`,{method:"PATCH",body:JSON.stringify(input)});
 }
 export async function setAgentStatus(id:string,status:"active"|"paused"|"disabled"){
-  const op=status==="active"?"enable":status;
+  const op=status==="active"?"enable":status==="paused"?"pause":"disable";
   return api<{ok:true;status:string}>(`/api/agents/${id}/${op}`,{method:"POST"});
 }
 export async function executeAgent(
