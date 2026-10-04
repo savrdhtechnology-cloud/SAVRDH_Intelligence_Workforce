@@ -774,3 +774,169 @@ radial-gradient(circle at 70% 70%,rgba(73,227,255,.15),transparent 26%),#071523}
 .task-card.selected{border-color:var(--crm-cyan);box-shadow:inset 2px 0 0 var(--crm-cyan)}
 .task-card:has(.task-select-cell){grid-template-columns:auto 1fr auto}
 .task-cancel-btn{border-color:#673547!important;color:#ff9caf!important}
+
+
+/* CRM global interactive motion layer */
+.crm-clickable-card,
+.crm-clickable-row,
+.pipeline-card,
+.agent-list>button,
+.workflow-list>button,
+.task-card,
+.crm-integration-card,
+.crm-activity,
+.crm-nav button,
+.crm-top-actions button,
+.crm-filter-row button,
+.task-scopes button,
+.task-new-btn,
+.agent-tabs button,
+.workflow-actions button,
+.task-card-actions button,
+.crm-sidebar-foot button{
+  transition:
+    transform .2s cubic-bezier(.22,1,.36,1),
+    border-color .2s ease,
+    background .2s ease,
+    box-shadow .2s ease,
+    color .2s ease,
+    opacity .2s ease;
+}
+
+.crm-clickable-card,
+.pipeline-card,
+.crm-clickable-row,
+.agent-list>button,
+.workflow-list>button,
+.task-card,
+.crm-integration-card,
+.crm-activity{
+  cursor:pointer;
+  position:relative;
+}
+
+.crm-clickable-card{
+  width:100%;
+  text-align:left;
+  color:inherit;
+  border:1px solid var(--crm-line);
+  font:inherit;
+}
+
+.crm-clickable-card:hover,
+.task-card:hover,
+.crm-integration-card:hover{
+  transform:translateY(-4px);
+  border-color:rgba(73,227,255,.38);
+  box-shadow:0 14px 34px rgba(0,0,0,.18),0 0 0 1px rgba(73,227,255,.04);
+}
+
+.crm-clickable-row{
+  transform-origin:center;
+}
+.crm-clickable-row:hover td{
+  background:rgba(73,227,255,.035);
+  border-top-color:rgba(73,227,255,.34);
+  border-bottom-color:rgba(73,227,255,.34);
+}
+.crm-clickable-row:hover td:first-child{
+  border-left-color:rgba(73,227,255,.34);
+}
+.crm-clickable-row:hover td:last-child{
+  border-right-color:rgba(73,227,255,.34);
+}
+.crm-clickable-row:hover strong{
+  color:#eefcff;
+  text-shadow:0 0 12px rgba(73,227,255,.12);
+}
+
+.pipeline-card{
+  width:100%;
+  text-align:left;
+  color:inherit;
+  font:inherit;
+}
+.pipeline-card:hover{
+  border-color:rgba(73,227,255,.42);
+  box-shadow:0 10px 26px rgba(0,0,0,.18),inset 3px 0 0 rgba(73,227,255,.8);
+}
+
+.agent-list>button:hover,
+.workflow-list>button:hover{
+  transform:translateX(4px);
+  border-color:rgba(73,227,255,.24);
+  box-shadow:inset 3px 0 0 rgba(73,227,255,.5);
+}
+
+.crm-activity:hover{
+  transform:translateX(3px);
+  border-color:rgba(73,227,255,.30);
+  background:#0a1d2d;
+}
+
+.crm-top-actions button:hover,
+.crm-filter-row button:hover,
+.task-scopes button:hover,
+.task-new-btn:hover,
+.agent-tabs button:hover,
+.workflow-actions button:hover,
+.task-card-actions button:hover,
+.crm-sidebar-foot button:hover{
+  transform:translateY(-2px);
+  border-color:rgba(73,227,255,.48);
+  box-shadow:0 8px 20px rgba(0,0,0,.16);
+}
+
+.crm-top-actions button:active,
+.crm-filter-row button:active,
+.task-scopes button:active,
+.task-new-btn:active,
+.agent-tabs button:active,
+.workflow-actions button:active,
+.task-card-actions button:active,
+.crm-sidebar-foot button:active{
+  transform:scale(.975);
+}
+
+.crm-clickable-card:focus-visible,
+.crm-clickable-row:focus-within,
+.pipeline-card:focus-visible,
+.agent-list>button:focus-visible,
+.workflow-list>button:focus-visible,
+.task-card:focus-within{
+  outline:2px solid rgba(73,227,255,.55);
+  outline-offset:2px;
+}
+
+/* keep form controls independent from row click motion */
+.crm-clickable-row select,
+.crm-clickable-row button,
+.crm-clickable-row a,
+.task-card select,
+.task-card button{
+  position:relative;
+  z-index:2;
+}
+
+@media (prefers-reduced-motion: reduce){
+  .crm-clickable-card,
+  .crm-clickable-row,
+  .pipeline-card,
+  .agent-list>button,
+  .workflow-list>button,
+  .task-card,
+  .crm-integration-card,
+  .crm-activity,
+  .crm-nav button,
+  .crm-top-actions button,
+  .crm-filter-row button,
+  .task-scopes button,
+  .task-new-btn,
+  .agent-tabs button,
+  .workflow-actions button,
+  .task-card-actions button,
+  .crm-sidebar-foot button{
+    transition:none!important;
+    transform:none!important;
+  }
+}
