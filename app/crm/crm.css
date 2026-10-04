@@ -737,16 +737,16 @@ radial-gradient(circle at 70% 70%,rgba(73,227,255,.15),transparent 26%),#071523}
 .workflow-list>button.active:has(.workflow-status.active){
   background:rgba(255,76,105,.16);
 }
-.workflow-detail-active{
+.workflow-layout:has(.workflow-list>button.active .workflow-status.active) .workflow-detail{
   border-color:rgba(255,76,105,.75);
   box-shadow:0 0 0 1px rgba(255,76,105,.14),0 0 26px rgba(255,76,105,.06);
 }
-.workflow-detail-active .workflow-detail-head{
+.workflow-layout:has(.workflow-list>button.active .workflow-status.active) .workflow-detail-head{
   background:linear-gradient(90deg,rgba(255,76,105,.14),rgba(255,76,105,.03));
   border-bottom-color:rgba(255,76,105,.35);
 }
-.workflow-detail-paused,
-.workflow-detail-disabled{
+.workflow-layout:has(.workflow-list>button.active .workflow-status.paused) .workflow-detail,
+.workflow-layout:has(.workflow-list>button.active .workflow-status.disabled) .workflow-detail{
   opacity:.82;
 }
 .task-bulkbar{
