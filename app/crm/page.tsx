@@ -187,6 +187,15 @@ export default function CRMPage() {
     setLeads((data || []) as Lead[]);
   }
 
+  async function navigateCRM(nextView: View, status?: string) {
+    if (nextView === "leads") {
+      const nextStatus = status || "";
+      setLeadStatus(nextStatus);
+      await filterLeads(nextStatus, search);
+    }
+    setView(nextView);
+  }
+
   async function logout() {
     await crmSupabase.auth.signOut();
   }
@@ -270,7 +279,7 @@ export default function CRMPage() {
         <div className="crm-content">
           <AnimatePresence mode="wait">
             <motion.div key={view} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: .24 }}>
-              {view === "dashboard" && <Dashboard dashboard={dashboard} />}
+              {view === "dashboard" && <Dashboard dashboard={dashboard} onNavigate={navigateCRM} />}
               {view === "leads" && (
                 <LeadsView
                   leads={leads}
@@ -279,9 +288,10 @@ export default function CRMPage() {
                   leadStatus={leadStatus}
                   setLeadStatus={(v) => { setLeadStatus(v); filterLeads(v, search); }}
                   updateLeadStatus={updateLeadStatus}
+                  openLead={(id) => { window.location.href = `/crm/leads/${id}`; }}
                 />
               )}
-              {view === "pipeline" && <PipelineView pipeline={pipeline} />}
+              {view === "pipeline" && <PipelineView pipeline={pipeline} openLead={(id:string) => { window.location.href = `/crm/leads/${id}`; }} />}
               {view === "agents" && <AgentsModule />}
               {view === "workflows" && <WorkflowsModule />}
               {view === "inbox" && <InboxModule />}
@@ -317,16 +327,16 @@ export default function CRMPage() {
   );
 }
 
-function Dashboard({ dashboard }: { dashboard: any }) {
+function Dashboard({ dashboard, onNavigate }: { dashboard: any; onNavigate: (view: View, status?: string) => void }) {
   const metrics = [
-    ["Total Leads", dashboard?.lead_total || 0, Users],
-    ["Qualified", dashboard?.lead_qualified || 0, CheckCircle2],
-    ["Pipeline Value", formatMoney(dashboard?.pipeline_value || 0), CircleDollarSign],
-    ["Pending Tasks", dashboard?.tasks_pending || 0, ListTodo],
-    ["Open Inbox", dashboard?.conversations_open || 0, Inbox],
-    ["Active Agents", dashboard?.agents_active || 0, Bot],
-    ["Active Workflows", dashboard?.workflows_active || 0, Workflow],
-    ["Won Value", formatMoney(dashboard?.won_value || 0), BriefcaseBusiness],
+    ["Total Leads", dashboard?.lead_total || 0, Users, "leads", ""],
+    ["Qualified", dashboard?.lead_qualified || 0, CheckCircle2, "leads", "qualified"],
+    ["Pipeline Value", formatMoney(dashboard?.pipeline_value || 0), CircleDollarSign, "pipeline", ""],
+    ["Pending Tasks", dashboard?.tasks_pending || 0, ListTodo, "tasks", ""],
+    ["Open Inbox", dashboard?.conversations_open || 0, Inbox, "inbox", ""],
+    ["Active Agents", dashboard?.agents_active || 0, Bot, "agents", ""],
+    ["Active Workflows", dashboard?.workflows_active || 0, Workflow, "workflows", ""],
+    ["Won Value", formatMoney(dashboard?.won_value || 0), BriefcaseBusiness, "leads", "won"],
   ];
 
   const numericValues = [
@@ -342,11 +352,19 @@ function Dashboard({ dashboard }: { dashboard: any }) {
 
   return <>
     <div className="crm-metrics">
-      {metrics.map(([label, value, Icon]: any, i) => (
-        <motion.div className="crm-card crm-metric" key={label} whileHover={{ y: -4, scale: 1.01 }} transition={{ type: "spring", stiffness: 280, damping: 22 }}>
+      {metrics.map(([label, value, Icon, target, status]: any) => (
+        <motion.button
+          type="button"
+          className="crm-card crm-metric crm-clickable-card"
+          key={label}
+          onClick={() => onNavigate(target as View, status || undefined)}
+          whileHover={{ y: -5, scale: 1.012 }}
+          whileTap={{ scale: .985 }}
+          transition={{ type: "spring", stiffness: 300, damping: 22 }}
+        >
           <div className="crm-metric-head"><span>{label}</span><div className="crm-metric-icon"><Icon size={14} /></div></div>
-          <strong>{value}</strong><span>Live workspace data</span>
-        </motion.div>
+          <strong>{value}</strong><span>Click to open · Live workspace data</span>
+        </motion.button>
       ))}
     </div>
     <div className="crm-dashboard-grid">
@@ -375,9 +393,10 @@ type LeadsViewProps = {
   leadStatus: string;
   setLeadStatus: (value: string) => void;
   updateLeadStatus: (id: string, status: string) => Promise<void>;
+  openLead: (id: string) => void;
 };
 
-function LeadsView({ leads, search, setSearch, leadStatus, setLeadStatus, updateLeadStatus }: LeadsViewProps) {
+function LeadsView({ leads, search, setSearch, leadStatus, setLeadStatus, updateLeadStatus, openLead }: LeadsViewProps) {
   return <>
     <div className="crm-toolbar">
       <div className="crm-search"><Search size={15} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search leads by name, company, email or phone..." /></div>
@@ -387,22 +406,22 @@ function LeadsView({ leads, search, setSearch, leadStatus, setLeadStatus, update
       </div>
     </div>
     {leads.length ? <div className="crm-panel"><table className="crm-table"><thead><tr><th>LEAD</th><th>SOURCE</th><th>PRIORITY</th><th>SCORE</th><th>VALUE</th><th>STATUS</th><th>CREATED</th></tr></thead><tbody>
-      {leads.map((l: Lead) => <tr key={l.id}>
-        <td><a href={`/crm/leads/${l.id}`} className="crm-lead-link"><strong>{l.title}</strong></a><small>{l.company || l.email || l.phone || "No secondary detail"}</small></td>
+      {leads.map((l: Lead) => <tr key={l.id} className="crm-clickable-row" onClick={() => openLead(l.id)}>
+        <td><strong>{l.title}</strong><small>{l.company || l.email || l.phone || "No secondary detail"}</small></td>
         <td><span className={`crm-badge ${l.source==="engagex"?"engagex":""}`}><i /> {l.source==="engagex"?"ENGAGEX":l.source}</span></td>
         <td>{l.priority}</td><td>{l.score}</td><td>{formatMoney(l.value || 0)}</td>
-        <td><select className="crm-status-select" value={l.status} onChange={(e) => updateLeadStatus(l.id, e.target.value)}>{statuses.map((s) => <option key={s}>{s}</option>)}</select></td>
+        <td onClick={(e) => e.stopPropagation()}><select className="crm-status-select" value={l.status} onChange={(e) => updateLeadStatus(l.id, e.target.value)}>{statuses.map((s) => <option key={s}>{s}</option>)}</select></td>
         <td>{shortDate(l.created_at)}</td>
       </tr>)}
     </tbody></table></div> : <EmptyState icon={Users} title="No leads found" text="Create your first lead or change the current search/filter." />}
   </>;
 }
 
-function PipelineView({ pipeline }: any) {
+function PipelineView({ pipeline, openLead }: { pipeline: any; openLead: (id: string) => void }) {
   return <div className="pipeline-board">
     {pipeline.map((col: any) => <div className="pipeline-col" key={col.stage}>
       <div className="pipeline-head"><b>{col.stage.toUpperCase()}</b><span>{col.items.length}</span></div>
-      {col.items.map((l: Lead) => <motion.div className="pipeline-card" key={l.id} whileHover={{ y: -3, scale: 1.01 }}><strong>{l.title}</strong><span>{l.company || l.source}</span><em>{formatMoney(l.value || 0)}</em></motion.div>)}
+      {col.items.map((l: Lead) => <motion.button type="button" className="pipeline-card" key={l.id} onClick={() => openLead(l.id)} whileHover={{ y: -4, scale: 1.012 }} whileTap={{ scale: .985 }}><strong>{l.title}</strong><span>{l.company || l.source}</span><em>{formatMoney(l.value || 0)}</em></motion.button>)}
     </div>)}
   </div>;
 }
