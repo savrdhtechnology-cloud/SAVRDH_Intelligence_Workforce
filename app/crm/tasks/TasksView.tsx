@@ -30,6 +30,7 @@ import {
   listTasks,
   setTaskStatus,
   updateTask,
+  runTaskWorkflow,
 } from "./task-service";
 import { executeAgent } from "../agents/agent-service";
 import {
@@ -221,36 +222,21 @@ export default function TasksView({ onChanged }: Props) {
     setError("");
     setRunMessage("");
     try {
-      if (task.status === "pending") {
-        await setTaskStatus(task.id, "in_progress");
-      }
-
-      const command = [
-        "Execute the assigned CRM task.",
-        `Task: ${task.title}`,
-        task.description ? `Instructions: ${task.description}` : "",
-        task.notes ? `Notes: ${task.notes}` : "",
-        "Use only verified CRM/customer data. Do not invent status, payment, approval or delivery claims.",
-        "Respect human approval requirements for external actions."
-      ].filter(Boolean).join("\n");
-
-      const result = await executeAgent(
-        task.assigned_agent_id,
-        command,
-        { lead_id: task.lead_id, task_id: task.id },
-        { mode: "analyze" }
-      );
-
+      const result = await runTaskWorkflow(task.id);
+      const workflowStatus = result?.result?.status || "completed";
+      const workType = result?.work_type || task.followup_type || task.task_type;
       setRunMessage(
-        result?.result?.approval_required
-          ? "AI task started. Agent plan created; approval is required for protected actions."
-          : "AI task started successfully. SAV-Sales analysis/plan has been created."
+        workflowStatus === "waiting_approval"
+          ? `${workType} workflow started and is waiting for approval.`
+          : workflowStatus === "waiting"
+            ? `${workType} workflow started and is waiting for its next scheduled step.`
+            : `${workType} workflow executed successfully.`
       );
       await refresh();
       if (detail?.task.id === task.id) setDetail(await getTaskDetail(task.id));
       await onChanged?.();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "AI task could not be started.");
+      setError(e instanceof Error ? e.message : "Task workflow could not be started.");
       await refresh();
     } finally {
       setRunningTaskId(null);
