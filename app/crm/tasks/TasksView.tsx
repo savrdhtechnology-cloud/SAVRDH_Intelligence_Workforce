@@ -385,6 +385,21 @@ export default function TasksView({ onChanged }: Props) {
                 <ChevronRight size={16} />
               </button>
               <div className="task-card-actions">
+                {task.status === "in_progress" && (
+                  <button onClick={() => changeStatus(task.id, "pending")} disabled={saving} title="Pause task">
+                    <Pause size={13} /><span>Pause</span>
+                  </button>
+                )}
+                {task.status === "pending" && (
+                  <button onClick={() => changeStatus(task.id, "in_progress")} disabled={saving} title="Resume task">
+                    <Play size={13} /><span>Resume</span>
+                  </button>
+                )}
+                {task.status !== "completed" && task.status !== "cancelled" && (
+                  <button className="task-cancel-btn" onClick={() => changeStatus(task.id, "cancelled")} disabled={saving} title="Cancel task">
+                    <X size={13} /><span>Cancel</span>
+                  </button>
+                )}
                 {task.assignee_type === "ai" && task.status !== "completed" && task.status !== "cancelled" && (
                   <button
                     className="task-run-btn"
