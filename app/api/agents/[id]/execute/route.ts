@@ -49,6 +49,25 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
  }
  const agent=object(object(agentDetail).agent);
  const agentSlug=typeof agent.slug==="string"?agent.slug:"";
+ const agentStatus=typeof agent.status==="string"?agent.status:"";
+ if(agentStatus!=="active"){
+   return jsonError(
+     agentStatus==="paused"?"This agent is paused. Enable it before running work.":"This agent is disabled. Enable it before running work.",
+     409,
+     "AGENT_NOT_ACTIVE"
+   );
+ }
+
+ const {data:targetAllowed,error:targetError}=await supabase.rpc("sav_ai_crm_agent_target_allowed",{
+   p_agent_id:id,p_lead_id:leadId
+ });
+ if(targetError){
+   if(isDatabaseNotReady(targetError)) return databaseNotReady(targetError.message);
+   return jsonError(targetError.message,403,"AGENT_TARGET_CHECK_FAILED");
+ }
+ if(targetAllowed!==true){
+   return jsonError("This lead is outside the current agent testing scope.",409,"TEST_SCOPE_BLOCKED");
+ }
 
  const executionCommand=mode==="analyze"
    ? body.command!.trim()
