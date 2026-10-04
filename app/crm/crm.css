@@ -727,3 +727,50 @@ radial-gradient(circle at 70% 70%,rgba(73,227,255,.15),transparent 26%),#071523}
   .workflow-canvas{height:500px;min-height:500px}
   .workflow-actions button{flex:1 1 auto;justify-content:center}
 }
+
+/* workflow active state emphasis */
+.workflow-list>button:has(.workflow-status.active){
+  border-left:3px solid #ff667d;
+  background:rgba(255,76,105,.10);
+}
+.workflow-list>button:has(.workflow-status.active):hover,
+.workflow-list>button.active:has(.workflow-status.active){
+  background:rgba(255,76,105,.16);
+}
+.workflow-detail-active{
+  border-color:rgba(255,76,105,.75);
+  box-shadow:0 0 0 1px rgba(255,76,105,.14),0 0 26px rgba(255,76,105,.06);
+}
+.workflow-detail-active .workflow-detail-head{
+  background:linear-gradient(90deg,rgba(255,76,105,.14),rgba(255,76,105,.03));
+  border-bottom-color:rgba(255,76,105,.35);
+}
+.workflow-detail-paused,
+.workflow-detail-disabled{
+  opacity:.82;
+}
+.task-bulkbar{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  padding:10px 12px;
+  border:1px solid #173754;
+  background:#081725;
+  border-radius:10px;
+}
+.task-bulkbar button{
+  border:1px solid #2a4d68;
+  background:#0d2032;
+  color:#b7cad8;
+  border-radius:8px;
+  padding:7px 10px;
+  font-size:8px;
+  cursor:pointer;
+}
+.task-bulkbar button.danger{border-color:#673547;color:#ff9caf}
+.task-select-all{display:flex;align-items:center;gap:7px;font-size:9px;color:#b7cad8}
+.task-select-cell{display:flex;align-items:center;justify-content:center;padding-left:10px}
+.task-card.selected{border-color:var(--crm-cyan);box-shadow:inset 2px 0 0 var(--crm-cyan)}
+.task-card:has(.task-select-cell){grid-template-columns:auto 1fr auto}
+.task-cancel-btn{border-color:#673547!important;color:#ff9caf!important}
