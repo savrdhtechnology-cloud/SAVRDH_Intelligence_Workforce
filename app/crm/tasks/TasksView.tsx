@@ -332,6 +332,21 @@ export default function TasksView({ onChanged }: Props) {
         </div>
       </div>
 
+      <div className="task-bulkbar">
+        <label className="task-select-all">
+          <input
+            type="checkbox"
+            checked={tasks.filter((t) => t.status !== "completed").length > 0 && tasks.filter((t) => t.status !== "completed").every((t) => selectedTaskIds.includes(t.id))}
+            onChange={toggleSelectAllVisible}
+          />
+          <span>Select All</span>
+        </label>
+        <span>{selectedTaskIds.length} selected</span>
+        <button onClick={() => applyBulkStatus("pending")} disabled={!selectedTaskIds.length || saving}>Pause Selected</button>
+        <button onClick={() => applyBulkStatus("in_progress")} disabled={!selectedTaskIds.length || saving}>Resume Selected</button>
+        <button className="danger" onClick={() => applyBulkStatus("cancelled")} disabled={!selectedTaskIds.length || saving}>Cancel Selected</button>
+      </div>
+
       <div className="task-scopes">
         {scopes.map((scope) => (
           <button key={scope.id} className={filters.scope === scope.id ? "active" : ""} onClick={() => applyFilters({ ...filters, scope: scope.id })}>
