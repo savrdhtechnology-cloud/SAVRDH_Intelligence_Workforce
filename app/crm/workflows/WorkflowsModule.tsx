@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
 import { FormEvent, PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity, Archive, Bot, CheckCircle2, CircleAlert, Copy, GitBranch, Loader2,
@@ -118,8 +119,18 @@ export default function WorkflowsModule({focusedId}:{focusedId?:string}){
 
   if(loading&&!workflows.length)return <div className="workflow-loading"><Loader2 size={20} className="spin"/> Loading workflow engine...</div>;
 
-  return <div className="workflow-module">
-    <div className="workflow-metrics">
+  return <motion.div
+    className="workflow-module"
+    initial={{opacity:0,y:8}}
+    animate={{opacity:1,y:0}}
+    transition={{duration:.35,ease:[.22,1,.36,1]}}
+  >
+    <motion.div
+      className="workflow-metrics"
+      initial="hidden"
+      animate="show"
+      variants={{hidden:{opacity:0},show:{opacity:1,transition:{staggerChildren:.055}}}}
+    >
       <Metric label="Active workflows" value={metrics.active_workflows||0}/>
       <Metric label="Executions today" value={metrics.executions_today||0}/>
       <Metric label="Successful" value={metrics.successful||0}/>
@@ -127,10 +138,14 @@ export default function WorkflowsModule({focusedId}:{focusedId?:string}){
       <Metric label="Waiting" value={metrics.waiting||0}/>
       <Metric label="Approval pending" value={metrics.approval_pending||0}/>
       <Metric label="Avg seconds" value={Math.round(Number(metrics.average_execution_seconds||0))}/>
-    </div>
+    </motion.div>
 
-    {error&&<div className="task-error">{error}</div>}
-    {success&&<div className="agent-success">{success}</div>}
+    <AnimatePresence mode="popLayout">
+      {error&&<motion.div className="task-error" initial={{opacity:0,y:-6}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-4}}>{error}</motion.div>}
+    </AnimatePresence>
+    <AnimatePresence mode="popLayout">
+      {success&&<motion.div className="agent-success" initial={{opacity:0,y:-6}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-4}}>{success}</motion.div>}
+    </AnimatePresence>
 
     <div className="workflow-toolbar">
       <div><b>Workflow Registry</b><span>Database-backed orchestration</span></div>
@@ -141,13 +156,34 @@ export default function WorkflowsModule({focusedId}:{focusedId?:string}){
     </div>
 
     <div className="workflow-layout">
-      <aside className="workflow-list">
-        {workflows.length?workflows.map(w=><button key={w.id} className={w.id===selected?"active":""} onClick={()=>openWorkflow(w.id)}>
+      <motion.aside
+        className="workflow-list"
+        initial="hidden"
+        animate="show"
+        variants={{hidden:{opacity:0,x:-8},show:{opacity:1,x:0,transition:{staggerChildren:.05}}}}
+      >
+        {workflows.length?workflows.map(w=><motion.button
+          key={w.id}
+          className={w.id===selected?"active":""}
+          onClick={()=>openWorkflow(w.id)}
+          variants={{hidden:{opacity:0,x:-8},show:{opacity:1,x:0}}}
+          whileHover={{x:3}}
+          whileTap={{scale:.985}}
+          transition={{duration:.18}}
+        >
           <span><b>{w.name}</b><small>{w.trigger_type} · v{w.version}</small></span><em className={"workflow-status "+w.status}>{w.status}</em>
-        </button>):<div className="crm-empty"><div><Workflow size={24}/><h3>No workflows</h3><p>Create one or start from a template.</p></div></div>}
-      </aside>
+        </motion.button>):<div className="crm-empty"><div><Workflow size={24}/><h3>No workflows</h3><p>Create one or start from a template.</p></div></div>}
+      </motion.aside>
 
-      <section className="workflow-detail">
+      <AnimatePresence mode="wait">
+      <motion.section
+        key={selected || "empty"}
+        className="workflow-detail"
+        initial={{opacity:0,y:8,scale:.995}}
+        animate={{opacity:1,y:0,scale:1}}
+        exit={{opacity:0,y:-5,scale:.997}}
+        transition={{duration:.24,ease:[.22,1,.36,1]}}
+      >
         {!detail?<div className="crm-empty"><div><Workflow size={26}/><h3>Select a workflow</h3></div></div>:<>
           <div className="workflow-detail-head">
             <div className="workflow-title-edit">
@@ -192,14 +228,20 @@ export default function WorkflowsModule({focusedId}:{focusedId?:string}){
             {(detail.executions||[]).length?<div className="crm-activity-list">{detail.executions.map((e:any)=><Link className="crm-activity" href={`/crm/workflows/executions/${e.id}`} key={e.id}><i/><div><b>{e.trigger}</b><span>{e.execution_state} · node {e.current_node_id||"complete"}</span></div><time>{new Date(e.updated_at).toLocaleString("en-IN")}</time></Link>)}</div>:<p className="workflow-empty-copy">No executions yet.</p>}
           </div>
         </>}
-      </section>
+      </motion.section>
+      </AnimatePresence>
     </div>
 
     {createOpen&&<CreateWorkflowModal templates={templates} onClose={()=>setCreateOpen(false)} onCreated={async id=>{setCreateOpen(false);await refresh(id);}}/>}
-  </div>;
+  </motion.div>;
 }
 
-function Metric({label,value}:{label:string;value:number}){return <div className="crm-card workflow-metric"><span>{label}</span><strong>{value}</strong></div>}
+function Metric({label,value}:{label:string;value:number}){return <motion.div
+  className="crm-card workflow-metric"
+  variants={{hidden:{opacity:0,y:10},show:{opacity:1,y:0}}}
+  whileHover={{y:-3,scale:1.01}}
+  transition={{duration:.22,ease:[.22,1,.36,1]}}
+><span>{label}</span><strong>{value}</strong></motion.div>}
 
 function WorkflowCanvas({graph,selectedNode,connectFrom,onNodeClick,onMove}:{graph:WorkflowGraph;selectedNode:string|null;connectFrom:string|null;onNodeClick:(id:string)=>void;onMove:(id:string,pos:{x:number;y:number})=>void}){
   const canvas=useRef<HTMLDivElement>(null);
@@ -211,12 +253,29 @@ function WorkflowCanvas({graph,selectedNode,connectFrom,onNodeClick,onMove}:{gra
     window.addEventListener("pointermove",move);window.addEventListener("pointerup",up);
   }
   const byId=new Map(graph.nodes.map(n=>[n.id,n]));
-  return <div className="workflow-canvas" ref={canvas}>
+  return <motion.div
+    className="workflow-canvas"
+    ref={canvas}
+    initial={{opacity:0,scale:.99}}
+    animate={{opacity:1,scale:1}}
+    transition={{duration:.32,ease:[.22,1,.36,1]}}
+  >
     <svg className="workflow-edge-layer">{graph.edges.map(e=>{const s=byId.get(e.source),t=byId.get(e.target);if(!s||!t)return null;const x1=s.position.x+160,y1=s.position.y+30,x2=t.position.x,y2=t.position.y+30;return <g key={e.id}><path d={`M ${x1} ${y1} C ${x1+70} ${y1}, ${x2-70} ${y2}, ${x2} ${y2}`}/>{e.branch&&<text x={(x1+x2)/2} y={(y1+y2)/2-6}>{e.branch}</text>}</g>})}</svg>
-    {graph.nodes.map(n=><button key={n.id} onPointerDown={e=>down(e,n)} onClick={()=>onNodeClick(n.id)} className={`workflow-node node-${n.type.toLowerCase()} ${selectedNode===n.id?"selected":""} ${connectFrom===n.id?"connecting":""}`} style={{left:n.position.x,top:n.position.y}}>
+    {graph.nodes.map((n,index)=><motion.button
+      key={n.id}
+      onPointerDown={e=>down(e,n)}
+      onClick={()=>onNodeClick(n.id)}
+      className={`workflow-node node-${n.type.toLowerCase()} ${selectedNode===n.id?"selected":""} ${connectFrom===n.id?"connecting":""}`}
+      style={{left:n.position.x,top:n.position.y}}
+      initial={{opacity:0,scale:.92,y:8}}
+      animate={{opacity:1,scale:1,y:0}}
+      transition={{duration:.24,delay:Math.min(index*.035,.25),ease:[.22,1,.36,1]}}
+      whileHover={{scale:1.025,y:-2}}
+      whileTap={{scale:.985}}
+    >
       <span>{n.type}</span><b>{n.label}</b><small>{nodeSummary(n)}</small>
-    </button>)}
-  </div>;
+    </motion.button>)}
+  </motion.div>;
 }
 
 function NodeInspector({node,agents,onChange,onConnect,onDelete}:{node:WorkflowNode;agents:any[];onChange:(n:WorkflowNode)=>void;onConnect:()=>void;onDelete:()=>void}){
