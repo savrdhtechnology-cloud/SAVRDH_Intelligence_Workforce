@@ -75,6 +75,7 @@ export default function TasksView({ onChanged }: Props) {
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [runningTaskId, setRunningTaskId] = useState<string | null>(null);
   const [runMessage, setRunMessage] = useState("");
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
 
   async function refresh(nextFilters = filters) {
     setLoading(true);
