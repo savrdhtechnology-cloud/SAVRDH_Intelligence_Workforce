@@ -143,9 +143,9 @@ export default function AgentsModule({focusedId}:{focusedId?:string}){
             <div><small>{current.slug}</small><h2>{detail.agent.display_name||current.name}</h2><p>{detail.agent.role_name}</p></div>
             <div className="agent-head-actions">
               {detail.permissions?.manage&&<>
-                <button onClick={()=>status("active")}><Play size={13}/>Enable</button>
-                <button onClick={()=>status("paused")}><Pause size={13}/>Pause</button>
-                <button onClick={()=>status("disabled")}><ShieldAlert size={13}/>Disable</button>
+                <button onClick={()=>status("active")} disabled={current.status==="active"}><Play size={13}/>Active</button>
+                <button onClick={()=>status("paused")} disabled={current.status==="paused"}><Pause size={13}/>Pause</button>
+                <button onClick={()=>status("disabled")} disabled={current.status==="disabled"}><ShieldAlert size={13}/>Disable</button>
                 <button className="primary" onClick={save}><Save size={13}/>Save</button>
               </>}
               <Link href={`/crm/agents/${current.id}`}>Open Detail</Link>
@@ -169,15 +169,15 @@ export default function AgentsModule({focusedId}:{focusedId?:string}){
           </div>
 
           <div className="agent-test-console">
-            <div className="agent-console-head"><TestTube2 size={15}/><div><b>Agent Test Console</b><span>Analyze / Plan / Preview / Execute</span></div></div>
+            <div className="agent-console-head"><TestTube2 size={15}/><div><b>Agent Test Console</b><span>{current.status==="active"?"Active agent — ready to work":"Agent is "+current.status+" — enable it to run work"}</span></div></div>
             <label>Context / Lead<select value={leadId} onChange={e=>setLeadId(e.target.value)}><option value="">No lead context</option>{leads.map(l=><option key={l.id} value={l.id}>{l.title}</option>)}</select></label>
             <label>Test input<textarea value={testInput} onChange={e=>setTestInput(e.target.value)} placeholder="Describe what the agent should analyze or plan..."/></label>
             <div className="agent-head-actions">
-              <button className="task-new-btn" onClick={runAnalyze} disabled={agentRunning||!leadId||!testInput.trim()}>
+              <button className="task-new-btn" onClick={runAnalyze} disabled={current.status!=="active"||agentRunning||!leadId||!testInput.trim()}>
                 {agentRunning?<Loader2 size={13} className="spin"/>:<Activity size={13}/>}Analyze & Plan
               </button>
               {current.slug==="sav-sales"&&testResult?.mode==="analyze"&&testResult?.result?.decision&&
-                <button onClick={runExecute} disabled={agentRunning}>
+                <button onClick={runExecute} disabled={current.status!=="active"||agentRunning}>
                   <Play size={13}/>Execute Approved Actions
                 </button>}
             </div>
