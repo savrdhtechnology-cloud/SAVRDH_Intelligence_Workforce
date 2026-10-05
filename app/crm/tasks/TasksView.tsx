@@ -56,7 +56,7 @@ const scopes: Array<{ id: TaskScope; label: string }> = [
 ];
 
 const priorities: TaskPriority[] = ["urgent", "high", "medium", "low"];
-const statuses: TaskStatus[] = ["pending", "in_progress", "completed", "cancelled"];
+const statuses: TaskStatus[] = ["pending", "paused", "in_progress", "completed", "cancelled"];
 
 type Props = {
   onChanged?: () => Promise<void> | void;
@@ -128,11 +128,13 @@ export default function TasksView({ onChanged }: Props) {
       }
       setSelectedTaskIds([]);
       setRunMessage(
-        status === "pending"
+        status === "paused"
           ? "Selected tasks paused."
-          : status === "cancelled"
+          : status === "pending"
+            ? "Selected tasks resumed."
+            : status === "cancelled"
             ? "Selected tasks cancelled."
-            : "Selected tasks resumed."
+            : "Selected tasks updated."
       );
       await refresh();
       await onChanged?.();
@@ -343,8 +345,8 @@ export default function TasksView({ onChanged }: Props) {
           <span>Select All</span>
         </label>
         <span>{selectedTaskIds.length} selected</span>
-        <button onClick={() => applyBulkStatus("pending")} disabled={!selectedTaskIds.length || saving}>Pause Selected</button>
-        <button onClick={() => applyBulkStatus("in_progress")} disabled={!selectedTaskIds.length || saving}>Resume Selected</button>
+        <button onClick={() => applyBulkStatus("paused")} disabled={!selectedTaskIds.length || saving}>Pause Selected</button>
+        <button onClick={() => applyBulkStatus("pending")} disabled={!selectedTaskIds.length || saving}>Resume Selected</button>
         <button className="danger" onClick={() => applyBulkStatus("cancelled")} disabled={!selectedTaskIds.length || saving}>Cancel Selected</button>
       </div>
 
@@ -387,12 +389,12 @@ export default function TasksView({ onChanged }: Props) {
               </button>
               <div className="task-card-actions">
                 {task.status === "in_progress" && (
-                  <button className="task-control-btn task-control-pause" onClick={() => changeStatus(task.id, "pending")} disabled={saving} title="Pause task">
+                  <button className="task-control-btn task-control-pause" onClick={() => changeStatus(task.id, "paused")} disabled={saving} title="Pause task">
                     <Pause size={13} /><span>Pause</span>
                   </button>
                 )}
-                {task.status === "pending" && (
-                  <button className="task-control-btn task-control-resume" onClick={() => changeStatus(task.id, "in_progress")} disabled={saving} title="Resume task">
+                {task.status === "paused" && (
+                  <button className="task-control-btn task-control-resume" onClick={() => changeStatus(task.id, "pending")} disabled={saving} title="Resume task">
                     <Play size={13} /><span>Resume</span>
                   </button>
                 )}
