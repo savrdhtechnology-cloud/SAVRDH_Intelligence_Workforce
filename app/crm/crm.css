@@ -1023,3 +1023,13 @@ radial-gradient(circle at 70% 70%,rgba(73,227,255,.15),transparent 26%),#071523}
 .exec-failed .workflow-exec-dot{background:#ff6f86;box-shadow:0 0 0 4px rgba(255,111,134,.10),0 0 14px rgba(255,111,134,.65);animation:none}
 .exec-completed .workflow-exec-dot{background:#53d69b;box-shadow:0 0 0 4px rgba(83,214,155,.10),0 0 14px rgba(83,214,155,.55);animation:none}
 @keyframes workflowProcessPulse{0%,100%{transform:scale(.9);opacity:.7}50%{transform:scale(1.2);opacity:1}}
+
+
+/* workflow canvas gesture isolation */
+.workflow-canvas{
+  overscroll-behavior:contain;
+  touch-action:none;
+}
+.workflow-canvas-stage{
+  will-change:transform;
+}
