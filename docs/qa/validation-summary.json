@@ -1,0 +1,18 @@
+{
+  "commit": "4ce1f6dfa28488bf0630c8de273d6e803224b0df",
+  "automated": {
+    "total": 125,
+    "passed": 125,
+    "failed": 0,
+    "runtime_tests": 16,
+    "contract_tests": 109
+  },
+  "typecheck": "pass",
+  "lint": "pass",
+  "build": "pass",
+  "staging_sql_suites": 2,
+  "staging_sql_results": "pass, fixtures rolled back",
+  "preview": "READY; CRM login rendered",
+  "authenticated_ui": "blocked: sign-in needed",
+  "real_email_send": "not attempted: unsupported/unconfigured sender"
+}

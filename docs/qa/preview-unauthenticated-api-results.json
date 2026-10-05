@@ -1,0 +1,91 @@
+{
+  "deployment": "4ce1f6dfa28488bf0630c8de273d6e803224b0df",
+  "results": [
+    {
+      "method": "GET",
+      "path": "/api/agents",
+      "status": 401,
+      "content_type": "application/json",
+      "response": {
+        "message": "Protected by Vercel Authentication",
+        "code": "401"
+      },
+      "verdict": "BLOCKED at Vercel protection; application route not reached"
+    },
+    {
+      "method": "POST",
+      "path": "/api/agents/00000000-0000-0000-0000-000000000000/execute",
+      "status": 401,
+      "content_type": "application/json",
+      "response": {
+        "message": "Protected by Vercel Authentication",
+        "code": "401"
+      },
+      "verdict": "BLOCKED at Vercel protection; application route not reached"
+    },
+    {
+      "method": "GET",
+      "path": "/api/inbox/conversations",
+      "status": 401,
+      "content_type": "application/json",
+      "response": {
+        "message": "Protected by Vercel Authentication",
+        "code": "401"
+      },
+      "verdict": "BLOCKED at Vercel protection; application route not reached"
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications",
+      "status": 401,
+      "content_type": "application/json",
+      "response": {
+        "message": "Protected by Vercel Authentication",
+        "code": "401"
+      },
+      "verdict": "BLOCKED at Vercel protection; application route not reached"
+    },
+    {
+      "method": "GET",
+      "path": "/api/workflows",
+      "status": 401,
+      "content_type": "application/json",
+      "response": {
+        "message": "Protected by Vercel Authentication",
+        "code": "401"
+      },
+      "verdict": "BLOCKED at Vercel protection; application route not reached"
+    },
+    {
+      "method": "POST",
+      "path": "/api/sales/email-drafts",
+      "status": 401,
+      "content_type": "application/json",
+      "response": {
+        "message": "Protected by Vercel Authentication",
+        "code": "401"
+      },
+      "verdict": "BLOCKED at Vercel protection; application route not reached"
+    },
+    {
+      "method": "POST",
+      "path": "/api/integrations/engagex/sync",
+      "status": 401,
+      "content_type": "application/json",
+      "response": {
+        "message": "Protected by Vercel Authentication",
+        "code": "401"
+      },
+      "verdict": "BLOCKED at Vercel protection; application route not reached"
+    }
+  ],
+  "connector_followup": {
+    "routes": [
+      "/api/agents",
+      "/api/inbox/conversations",
+      "/api/notifications",
+      "/api/workflows"
+    ],
+    "result": "Vercel authorized fetch returned deployment_authentication_required after redirect; application auth not certified"
+  }
+}
