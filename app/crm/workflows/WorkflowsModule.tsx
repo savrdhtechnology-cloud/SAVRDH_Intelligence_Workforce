@@ -195,9 +195,21 @@ export default function WorkflowsModule({focusedId}:{focusedId?:string}){
               <select value={detail.workflow.trigger_type} onChange={e=>setDetail({...detail,workflow:{...detail.workflow,trigger_type:e.target.value}})}>{WORKFLOW_TRIGGERS.map(t=><option key={t}>{t}</option>)}</select>
             </div>
             <div className="workflow-actions">
-              <button onClick={()=>setStatus("active")}><Play size={12}/>Enable</button>
-              <button onClick={()=>setStatus("paused")}><Pause size={12}/>Pause</button>
-              <button onClick={()=>setStatus("disabled")}><CircleAlert size={12}/>Disable</button>
+              <span className={`workflow-state-pill ${detail.workflow.status}`}>
+                <i />
+                {detail.workflow.status==="active"?"ACTIVE":detail.workflow.status==="paused"?"PAUSED":"DISABLED"}
+              </span>
+              {detail.workflow.status==="active"&&<>
+                <button onClick={()=>setStatus("paused")}><Pause size={12}/>Pause</button>
+                <button onClick={()=>setStatus("disabled")}><CircleAlert size={12}/>Disable</button>
+              </>}
+              {detail.workflow.status==="paused"&&<>
+                <button onClick={()=>setStatus("active")}><Play size={12}/>Resume</button>
+                <button onClick={()=>setStatus("disabled")}><CircleAlert size={12}/>Disable</button>
+              </>}
+              {detail.workflow.status==="disabled"&&
+                <button onClick={()=>setStatus("active")}><Play size={12}/>Enable</button>
+              }
               <button onClick={duplicate}><Copy size={12}/>Duplicate</button>
               <button className="primary" onClick={save} disabled={saving}><Save size={12}/>{saving?"Saving":"Save v"+detail.workflow.version}</button>
               <button className="danger" onClick={archive}><Archive size={12}/>Archive</button>
