@@ -116,12 +116,21 @@ export async function mutateTaskAsAgent(input: AgentTaskMutation): Promise<void>
 }
 
 export async function runTaskWorkflow(taskId: string): Promise<any> {
-  const { data, error } = await crmSupabase.rpc("sav_ai_crm_run_task_workflow", {
-    p_task_id: taskId,
+  const { data: sessionData } = await crmSupabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+  if (!token) throw new Error("Authentication required.");
+
+  const response = await fetch(`/api/tasks/${taskId}/run`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
   });
-  if (error) throwRpc(error, "Workflow task execution failed.");
-  if (data && data.ok === false) {
-    throw new Error(data.message || data.error || "Workflow task execution was rejected.");
+
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok || body?.ok === false) {
+    throw new Error(body?.message || body?.error || "Task execution failed.");
   }
-  return data;
+  return body;
 }
