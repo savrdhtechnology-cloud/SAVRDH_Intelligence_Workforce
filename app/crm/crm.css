@@ -1033,3 +1033,56 @@ radial-gradient(circle at 70% 70%,rgba(73,227,255,.15),transparent 26%),#071523}
 .workflow-canvas-stage{
   will-change:transform;
 }
+
+
+.workflow-state-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  min-height:34px;
+  padding:0 11px;
+  border-radius:999px;
+  border:1px solid #29475d;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.08em;
+  white-space:nowrap;
+}
+.workflow-state-pill i{
+  width:7px;
+  height:7px;
+  border-radius:999px;
+  display:block;
+}
+.workflow-state-pill.active{
+  color:#77f2d0;
+  border-color:rgba(83,214,155,.42);
+  background:rgba(83,214,155,.07);
+}
+.workflow-state-pill.active i{
+  background:#53d69b;
+  box-shadow:0 0 0 4px rgba(83,214,155,.10),0 0 14px rgba(83,214,155,.55);
+  animation:workflowStatusPulse 1.8s ease-in-out infinite;
+}
+.workflow-state-pill.paused{
+  color:#f2c76e;
+  border-color:rgba(233,184,93,.40);
+  background:rgba(233,184,93,.07);
+}
+.workflow-state-pill.paused i{
+  background:#e9b85d;
+  box-shadow:0 0 10px rgba(233,184,93,.50);
+}
+.workflow-state-pill.disabled{
+  color:#ff9aae;
+  border-color:rgba(255,111,134,.38);
+  background:rgba(255,111,134,.06);
+}
+.workflow-state-pill.disabled i{
+  background:#ff6f86;
+  box-shadow:0 0 10px rgba(255,111,134,.45);
+}
+@keyframes workflowStatusPulse{
+  0%,100%{transform:scale(.9);opacity:.72}
+  50%{transform:scale(1.18);opacity:1}
+}
