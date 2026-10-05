@@ -267,19 +267,51 @@ function WorkflowCanvas({
 }){
   const canvas=useRef<HTMLDivElement>(null);
   const [zoom,setZoom]=useState(1);
+  const [pan,setPan]=useState({x:0,y:0});
 
   function clampZoom(next:number){return Math.min(1.6,Math.max(.55,next));}
-  function zoomBy(delta:number){setZoom(z=>clampZoom(Number((z+delta).toFixed(2))));}
-  function resetView(){setZoom(1);}
-  function fitView(){
-    if(!graph.nodes.length){resetView();return;}
+  function bounds(){
+    if(!graph.nodes.length) return null;
+    const minX=Math.min(...graph.nodes.map(n=>n.position.x));
+    const minY=Math.min(...graph.nodes.map(n=>n.position.y));
     const maxX=Math.max(...graph.nodes.map(n=>n.position.x+220));
     const maxY=Math.max(...graph.nodes.map(n=>n.position.y+110));
-    const el=canvas.current;
-    if(!el){resetView();return;}
-    const next=Math.min(1,Math.max(.55,Math.min((el.clientWidth-40)/Math.max(maxX,1),(el.clientHeight-40)/Math.max(maxY,1))));
-    setZoom(Number(next.toFixed(2)));
+    return {minX,minY,maxX,maxY,width:maxX-minX,height:maxY-minY};
   }
+  function centerAt(nextZoom:number){
+    const el=canvas.current;
+    const b=bounds();
+    if(!el||!b) return;
+    setPan({
+      x:(el.clientWidth-b.width*nextZoom)/2-b.minX*nextZoom,
+      y:(el.clientHeight-b.height*nextZoom)/2-b.minY*nextZoom
+    });
+  }
+  function zoomBy(delta:number){
+    setZoom(z=>{
+      const next=clampZoom(Number((z+delta).toFixed(2)));
+      requestAnimationFrame(()=>centerAt(next));
+      return next;
+    });
+  }
+  function resetView(){
+    setZoom(1);
+    requestAnimationFrame(()=>centerAt(1));
+  }
+  function fitView(){
+    const el=canvas.current;
+    const b=bounds();
+    if(!el||!b){resetView();return;}
+    const next=Math.min(1,Math.max(.55,Math.min((el.clientWidth-70)/Math.max(b.width,1),(el.clientHeight-70)/Math.max(b.height,1))));
+    const fitted=Number(next.toFixed(2));
+    setZoom(fitted);
+    requestAnimationFrame(()=>centerAt(fitted));
+  }
+
+  useEffect(()=>{
+    const id=requestAnimationFrame(()=>fitView());
+    return ()=>cancelAnimationFrame(id);
+  },[graph.nodes.length]);
   function wheel(e:React.WheelEvent<HTMLDivElement>){
     if(e.ctrlKey||e.metaKey){
       e.preventDefault();
@@ -319,7 +351,7 @@ function WorkflowCanvas({
       <button onClick={fitView} title="Fit workflow"><Scan size={13}/><span>Fit</span></button>
     </div>
 
-    <div className="workflow-canvas-stage" style={{transform:`scale(${zoom})`,transformOrigin:"0 0"}}>
+    <div className="workflow-canvas-stage" style={{transform:`translate(${pan.x}px,${pan.y}px) scale(${zoom})`,transformOrigin:"0 0"}}>
       <svg className="workflow-edge-layer">{graph.edges.map(e=>{const s=byId.get(e.source),t=byId.get(e.target);if(!s||!t)return null;const x1=s.position.x+190,y1=s.position.y+36,x2=t.position.x,y2=t.position.y+36;return <g key={e.id}><path d={`M ${x1} ${y1} C ${x1+70} ${y1}, ${x2-70} ${y2}, ${x2} ${y2}`}/>{e.branch&&<text x={(x1+x2)/2} y={(y1+y2)/2-6}>{e.branch}</text>}</g>})}</svg>
       {graph.nodes.map((n,index)=>{
         const isExecuting=executingNodeId===n.id;
