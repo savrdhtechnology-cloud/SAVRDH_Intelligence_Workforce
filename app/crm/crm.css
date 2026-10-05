@@ -1176,3 +1176,13 @@ radial-gradient(circle at 70% 70%,rgba(73,227,255,.15),transparent 26%),#071523}
   0%,100%{transform:scale(.88);opacity:.62}
   50%{transform:scale(1.22);opacity:1}
 }
+
+
+.task-card.task-status-paused{
+  border-color:rgba(233,184,93,.42);
+  box-shadow:inset 3px 0 0 #e9b85d,0 0 18px rgba(233,184,93,.07);
+  opacity:.92;
+}
+.task-card.task-status-paused .task-card-copy strong{
+  color:#f3d18a;
+}
