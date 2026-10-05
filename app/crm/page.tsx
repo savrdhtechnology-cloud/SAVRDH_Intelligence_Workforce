@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Activity,
@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { crmSupabase, crmSupabaseConfigured } from "./supabase-client";
 import TasksView from "./tasks/TasksView";
+import { listTasks, runTaskWorkflow } from "./tasks/task-service";
 import AgentsModule from "./agents/AgentsModule";
 import WorkflowsModule from "./workflows/WorkflowsModule";
 import InboxModule from "./inbox/InboxModule";
@@ -84,6 +85,8 @@ export default function CRMPage() {
   const [leadModal, setLeadModal] = useState(false);
   const [search, setSearch] = useState("");
   const [leadStatus, setLeadStatus] = useState("");
+  const autoEmailAttempted = useRef<Set<string>>(new Set());
+  const autoEmailBusy = useRef(false);
 
   useEffect(() => {
     if (!crmSupabaseConfigured) return;
@@ -105,6 +108,50 @@ export default function CRMPage() {
 
     return () => listener.subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!userEmail) return;
+    let stopped = false;
+
+    async function runAutomaticFeeEmailTasks() {
+      if (stopped || autoEmailBusy.current || document.visibilityState !== "visible") return;
+      autoEmailBusy.current = true;
+      try {
+        const pending = await listTasks({ scope: "all", status: "pending", sort: "created_desc" });
+        const eligible = pending.filter((task) =>
+          task.assignee_type === "ai" &&
+          task.followup_type === "email" &&
+          String(task.notes || "").includes("fee-gate:auto")
+        );
+
+        for (const task of eligible) {
+          if (stopped || autoEmailAttempted.current.has(task.id)) continue;
+          autoEmailAttempted.current.add(task.id);
+          try {
+            await runTaskWorkflow(task.id);
+            await refreshAll();
+          } catch {
+            window.setTimeout(() => autoEmailAttempted.current.delete(task.id), 10 * 60 * 1000);
+          }
+        }
+      } finally {
+        autoEmailBusy.current = false;
+      }
+    }
+
+    void runAutomaticFeeEmailTasks();
+    const timer = window.setInterval(() => void runAutomaticFeeEmailTasks(), 15000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void runAutomaticFeeEmailTasks();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [userEmail]);
 
   async function initCRM() {
     setLoading(true);
