@@ -1,4 +1,6 @@
 "use client";
+import { crmFetch } from "../../request";
+
 
 import { useEffect,useState } from "react";
 import { useParams } from "next/navigation";
@@ -13,46 +15,55 @@ export default function LeadSalesDetailPage(){
   const params=useParams<{id:string}>();
   const [data,setData]=useState<Record<string,any>|null>(null);
   const [agents,setAgents]=useState<any[]>([]);
+  const [products,setProducts]=useState<any[]>([]);
+  const [productId,setProductId]=useState("");
   const [message,setMessage]=useState("");
   const [busy,setBusy]=useState(false);
 
   async function load(){
-    setBusy(true); setMessage("");
-    const [{data:detail,error},{data:agentRows}]=await Promise.all([
+    setBusy(true);
+    try{
+    const [detail,agentRows,productRows]=await Promise.all([
       crmSupabase.rpc("sav_ai_crm_lead_sales_detail",{p_lead_id:params.id}),
-      crmSupabase.rpc("sav_ai_crm_agents")
+      crmSupabase.rpc("sav_ai_crm_agents"),crmSupabase.rpc("sav_ai_crm_active_products")
     ]);
-    setBusy(false);
-    if(error){setMessage(error.message);return;}
-    setData(obj(detail)); setAgents(Array.isArray(agentRows)?agentRows:[]);
+    for(const r of [detail,agentRows,productRows])if(r.error)throw new Error(r.error.message);
+    setData(obj(detail.data));setAgents(agentRows.data||[]);setProducts(productRows.data||[]);
+    }catch(e){setMessage(e instanceof Error?e.message:"Lead could not be loaded.");}finally{setBusy(false);}
   }
 
   useEffect(()=>{load();},[params.id]);
 
   async function generateDraft(){
+    if(busy)return;
     const agent=agents.find((a)=>a.slug==="sav-sales"||a.name==="SAV-Sales");
     if(!agent){setMessage("SAV-Sales agent is not available.");return;}
     const {data:session}=await crmSupabase.auth.getSession();
     const token=session.session?.access_token;
     if(!token){setMessage("Authentication required.");return;}
     setBusy(true); setMessage("");
-    const res=await fetch("/api/sales/email-drafts",{method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({leadId:params.id,agentId:agent.id})});
+    try{
+    const res=await crmFetch("/api/sales/email-drafts",{method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({leadId:params.id,agentId:agent.id,productId:productId||undefined})});
     const body=await res.json().catch(()=>({}));
     setBusy(false);
     setMessage(body.message||body.error||(res.ok?"Email draft generated.":"Unable to generate email draft."));
-    await load();
+    if(res.ok)await load();
+    }catch{setMessage("Network unavailable. Refresh to check the saved result before retrying.");}finally{setBusy(false);}
   }
 
   async function approveSend(id:string){
+    if(busy)return;
     const {data:session}=await crmSupabase.auth.getSession();
     const token=session.session?.access_token;
     if(!token){setMessage("Authentication required.");return;}
     setBusy(true); setMessage("");
-    const res=await fetch(`/api/sales/email-drafts/${id}/approve-send`,{method:"POST",headers:{Authorization:`Bearer ${token}`}});
+    try{
+    const res=await crmFetch(`/api/sales/email-drafts/${id}/approve-send`,{method:"POST",headers:{Authorization:`Bearer ${token}`}});
     const body=await res.json().catch(()=>({}));
     setBusy(false);
     setMessage(body?.send?.message||body.message||body.error||(res.ok?"Email sent.":"Email send unavailable."));
-    await load();
+    if(res.ok)await load();
+    }catch{setMessage("Network unavailable. Refresh to check the saved result before retrying.");}finally{setBusy(false);}
   }
 
   if(!data) return <div className="crm-auth-page"><div className="crm-auth-card"><p>{busy?"Loading lead...":message||"Lead not found."}</p></div></div>;
@@ -68,7 +79,7 @@ export default function LeadSalesDetailPage(){
         <div className="crm-title-wrap"><small>SAV AI SALES WORKFLOW</small><h1>{lead.title||"Lead Detail"}</h1></div>
         <div className="crm-top-actions">
           <a className="crm-back-link" href="/crm"><ArrowLeft size={14}/> CRM</a>
-          <button onClick={load}><RefreshCw size={13}/> Refresh</button>
+          <button onClick={load} disabled={busy}><RefreshCw size={13}/> Refresh</button>
         </div>
       </header>
       <div className="crm-content">
@@ -100,6 +111,7 @@ export default function LeadSalesDetailPage(){
 
         <section className="crm-panel">
           <div className="crm-panel-head"><div><h3>Email</h3><span>Draft → Approve & Send</span></div><button className="primary" onClick={generateDraft} disabled={busy}><Mail size={13}/> Generate Draft</button></div>
+          <label className="crm-detail-list">Approved product / service<select value={productId} onChange={e=>setProductId(e.target.value)}><option value="">Use saved recommendation</option>{products.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>{!products.length&&<p>No active approved products are configured. Use the agent console to create a qualification task; no product or pricing will be invented.</p>}
           {emails.length?<div className="crm-activity-list">{emails.map((e:any)=><div className="crm-email-card" key={e.id}>
             <div><b>{e.subject}</b><span>{e.recipient} · {e.status.toUpperCase()} · {when(e.created_at)}</span><p>{e.body}</p></div>
             {e.status!=="sent"&&<button onClick={()=>approveSend(e.id)} disabled={busy}>Approve & Send</button>}

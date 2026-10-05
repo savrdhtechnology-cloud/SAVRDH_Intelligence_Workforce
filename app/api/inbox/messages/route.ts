@@ -1,8 +1,9 @@
+import { withApiErrors } from "../../../../lib/ai/api-errors";
 import { NextRequest } from "next/server";
 import { bearerPresent,jsonError,serverSupabase } from "../../../../lib/ai/server-supabase";
 import { dispatchQueuedMessage } from "../../../../lib/channels/message-dispatch";
 
-export async function POST(req:NextRequest){
+async function handlePOST(req:NextRequest){
  if(!bearerPresent(req))return jsonError("Authentication required",401,"UNAUTHORIZED");
  const b=await req.json().catch(()=>null) as null|{
    conversationId?:string;body?:string;messageType?:string;recipient?:string;agentId?:string;attachments?:unknown[];
@@ -34,3 +35,5 @@ export async function POST(req:NextRequest){
  if(!result.ok)return Response.json({error:result.error,message:result.message,message_id:result.message_id},{status:result.status});
  return Response.json(result,{status:201});
 }
+
+export const POST=withApiErrors(handlePOST);

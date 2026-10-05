@@ -29,6 +29,7 @@ import {
   Zap,
 } from "lucide-react";
 import { crmSupabase, crmSupabaseConfigured } from "./supabase-client";
+import { LeadEditor, Opportunities, WorkspaceSettings, rpc } from "./Operations";
 import TasksView from "./tasks/TasksView";
 import AgentsModule from "./agents/AgentsModule";
 import WorkflowsModule from "./workflows/WorkflowsModule";
@@ -52,6 +53,7 @@ type Lead = {
   value: number;
   next_followup_at: string | null;
   created_at: string;
+  metadata?: {archived?: boolean};
 };
 
 const nav: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
@@ -84,8 +86,13 @@ export default function CRMPage() {
   const [leadModal, setLeadModal] = useState(false);
   const [search, setSearch] = useState("");
   const [leadStatus, setLeadStatus] = useState("");
+  const [error,setError]=useState("");
+  const [editingLead,setEditingLead]=useState<Lead|null>(null);
+  const [refreshKey,setRefreshKey]=useState(0);
 
   useEffect(() => {
+    const requested=new URLSearchParams(window.location.search).get('view')||window.location.pathname.split('/')[2];
+    if(nav.some(n=>n.id===requested))setView(requested as View);
     if (!crmSupabaseConfigured) return;
     crmSupabase.auth.getSession().then(({ data }) => {
       const email = data.session?.user.email || "";
@@ -109,17 +116,19 @@ export default function CRMPage() {
   async function initCRM() {
     setLoading(true);
     try {
-      const { data: ws } = await crmSupabase.rpc("sav_ai_crm_workspace");
+      const ws = await rpc("sav_ai_crm_workspace");
       if (!ws) {
-        await crmSupabase.rpc("sav_ai_crm_bootstrap_workspace", { p_company_name: "Savrdh Technology" });
+        await rpc("sav_ai_crm_bootstrap_workspace", { p_company_name: "Savrdh Technology" });
       }
       await refreshAll();
-    } finally {
+    } catch(e){setError(e instanceof Error?e.message:"CRM initialization failed.");} finally {
       setLoading(false);
     }
   }
 
   async function refreshAll() {
+    setLoading(true);setError("");
+    try{
     const [ws, dash, leadRes, agentRes, integrationRes] = await Promise.all([
       crmSupabase.rpc("sav_ai_crm_workspace"),
       crmSupabase.rpc("sav_ai_crm_dashboard"),
@@ -127,11 +136,13 @@ export default function CRMPage() {
       crmSupabase.rpc("sav_ai_crm_agents"),
       crmSupabase.rpc("sav_ai_crm_integrations"),
     ]);
+    for(const r of [ws,dash,leadRes,agentRes,integrationRes])if(r.error)throw new Error(r.error.message);
     setWorkspace(ws.data);
     setDashboard(dash.data);
     setLeads((leadRes.data || []) as Lead[]);
     setAgents(agentRes.data || []);
     setIntegrations(integrationRes.data || []);
+    }catch(e){setError(e instanceof Error?e.message:"CRM refresh failed.");}finally{setLoading(false);}
   }
 
   async function handleAuth(e: FormEvent<HTMLFormElement>) {
@@ -156,6 +167,7 @@ export default function CRMPage() {
 
   async function createLead(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if(loading)return;
     const fd = new FormData(e.currentTarget);
     setLoading(true);
     const { error } = await crmSupabase.rpc("sav_ai_crm_create_lead", {
@@ -168,6 +180,7 @@ export default function CRMPage() {
       p_value: Number(fd.get("value") || 0),
     });
     setLoading(false);
+    if(error){setError(error.message);return;}
     if (!error) {
       setLeadModal(false);
       await refreshAll();
@@ -175,25 +188,19 @@ export default function CRMPage() {
   }
 
   async function updateLeadStatus(id: string, status: string) {
-    await crmSupabase.rpc("sav_ai_crm_update_lead_status", { p_lead_id: id, p_status: status });
-    await refreshAll();
-  }
-
-  async function filterLeads(nextStatus = leadStatus, nextSearch = search) {
-    const { data } = await crmSupabase.rpc("sav_ai_crm_list_leads", {
-      p_status: nextStatus || null,
-      p_search: nextSearch || null,
-    });
-    setLeads((data || []) as Lead[]);
+    if(loading)return;setLoading(true);setError("");
+    try{await rpc("sav_ai_crm_update_lead_status", { p_lead_id: id, p_status: status });await refreshAll();}
+    catch(e){setError(e instanceof Error?e.message:"Status update failed.");}finally{setLoading(false);}
   }
 
   async function navigateCRM(nextView: View, status?: string) {
     if (nextView === "leads") {
       const nextStatus = status || "";
       setLeadStatus(nextStatus);
-      await filterLeads(nextStatus, search);
+      setSearch("");
     }
     setView(nextView);
+    window.history.replaceState(null,"",`/crm?view=${nextView}`);
   }
 
   async function logout() {
@@ -248,7 +255,7 @@ export default function CRMPage() {
 
         <nav className="crm-nav">
           {nav.map(({ id, label, icon: Icon }) => (
-            <button key={id} className={view === id ? "active" : ""} onClick={() => setView(id)}>
+            <button key={id} className={view === id ? "active" : ""} onClick={() => {setView(id);window.history.replaceState(null,"",`/crm?view=${id}`);}}>
               <Icon size={15} /> {label}<span className="nav-dot" />
             </button>
           ))}
@@ -271,44 +278,45 @@ export default function CRMPage() {
           </div>
           <div className="crm-top-actions">
             <NotificationBell />
-            <button onClick={refreshAll}>{loading ? <Loader2 size={13} className="spin" /> : <Activity size={13} />} Refresh</button>
+            <button disabled={loading} onClick={async()=>{await refreshAll();setRefreshKey(k=>k+1);}}>{loading ? <Loader2 size={13} className="spin" /> : <Activity size={13} />} Refresh</button>
             {view === "leads" && <button className="primary" onClick={() => setLeadModal(true)}><Plus size={13} /> New Lead</button>}
           </div>
         </header>
 
         <div className="crm-content">
+          {error&&<div className="task-error" role="alert">{error}</div>}
           <AnimatePresence mode="wait">
-            <motion.div key={view} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: .24 }}>
+            <motion.div key={view+refreshKey} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: .24 }}>
               {view === "dashboard" && <Dashboard dashboard={dashboard} onNavigate={navigateCRM} />}
               {view === "leads" && (
                 <LeadsView
-                  leads={leads}
+                  leads={leads.filter(l=>(leadStatus==="archived"?l.metadata?.archived:!l.metadata?.archived&&(!leadStatus||l.status===leadStatus))&&[l.title,l.company,l.email,l.phone].some(v=>v?.toLowerCase().includes(search.toLowerCase())))}
                   search={search}
-                  setSearch={(v) => { setSearch(v); filterLeads(leadStatus, v); }}
+                  setSearch={(v) => { setSearch(v); }}
                   leadStatus={leadStatus}
-                  setLeadStatus={(v) => { setLeadStatus(v); filterLeads(v, search); }}
-                  updateLeadStatus={updateLeadStatus}
-                  openLead={(id) => { window.location.href = `/crm/leads/${id}`; }}
+                  setLeadStatus={(v) => { setLeadStatus(v); }}
+                  updateLeadStatus={updateLeadStatus} onEdit={setEditingLead} busy={loading}
                 />
               )}
-              {view === "pipeline" && <PipelineView pipeline={pipeline} openLead={(id:string) => { window.location.href = `/crm/leads/${id}`; }} />}
+              {view === "pipeline" && <Opportunities onChanged={refreshAll} />}
               {view === "agents" && <AgentsModule />}
               {view === "workflows" && <WorkflowsModule />}
               {view === "inbox" && <InboxModule />}
               {view === "notifications" && <NotificationsModule />}
               {view === "tasks" && <TasksView onChanged={refreshAll} />}
               {view === "integrations" && <IntegrationsView integrations={integrations} />}
-              {view === "settings" && <SettingsView workspace={workspace} />}
+              {view === "settings" && <WorkspaceSettings workspace={workspace} onChanged={refreshAll} />}
             </motion.div>
           </AnimatePresence>
         </div>
       </main>
 
+      {editingLead&&<LeadEditor lead={editingLead} onClose={()=>setEditingLead(null)} onSaved={refreshAll}/>}
       <AnimatePresence>
         {leadModal && (
           <motion.div className="crm-modal-wrap" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <motion.form className="crm-modal" onSubmit={createLead} initial={{ scale: .96, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: .96, y: 12 }}>
-              <div className="crm-modal-head"><h3>Create New Lead</h3><button type="button" onClick={() => setLeadModal(false)}><X size={15} /></button></div>
+              <div role="alert" className="task-error">{error}</div><div className="crm-modal-head"><h3>Create New Lead</h3><button type="button" onClick={() => setLeadModal(false)}><X size={15} /></button></div>
               <div className="crm-form">
                 <label className="full">Lead / Contact Name<input name="title" required placeholder="e.g. Acme Foods Pvt Ltd" /></label>
                 <label>Company<input name="company" /></label>
@@ -393,37 +401,28 @@ type LeadsViewProps = {
   leadStatus: string;
   setLeadStatus: (value: string) => void;
   updateLeadStatus: (id: string, status: string) => Promise<void>;
-  openLead: (id: string) => void;
+  onEdit:(lead:Lead)=>void; busy:boolean;
 };
 
-function LeadsView({ leads, search, setSearch, leadStatus, setLeadStatus, updateLeadStatus, openLead }: LeadsViewProps) {
+function LeadsView({ leads, search, setSearch, leadStatus, setLeadStatus, updateLeadStatus, onEdit, busy }: LeadsViewProps) {
   return <>
     <div className="crm-toolbar">
       <div className="crm-search"><Search size={15} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search leads by name, company, email or phone..." /></div>
       <div className="crm-filter-row">
         <button className={!leadStatus ? "active" : ""} onClick={() => setLeadStatus("")}>All</button>
-        {statuses.slice(0, 6).map((s) => <button key={s} className={leadStatus === s ? "active" : ""} onClick={() => setLeadStatus(s)}>{s}</button>)}
+        {[...statuses,"archived"].map((s) => <button key={s} className={leadStatus === s ? "active" : ""} onClick={() => setLeadStatus(s)}>{s}</button>)}
       </div>
     </div>
-    {leads.length ? <div className="crm-panel"><table className="crm-table"><thead><tr><th>LEAD</th><th>SOURCE</th><th>PRIORITY</th><th>SCORE</th><th>VALUE</th><th>STATUS</th><th>CREATED</th></tr></thead><tbody>
-      {leads.map((l: Lead) => <tr key={l.id} className="crm-clickable-row" onClick={() => openLead(l.id)}>
-        <td><strong>{l.title}</strong><small>{l.company || l.email || l.phone || "No secondary detail"}</small></td>
+    {leads.length ? <div className="crm-panel"><table className="crm-table"><thead><tr><th>LEAD</th><th>SOURCE</th><th>PRIORITY</th><th>SCORE</th><th>VALUE</th><th>STATUS</th><th>CREATED</th><th>ACTIONS</th></tr></thead><tbody>
+      {leads.map((l: Lead) => <tr key={l.id} className="crm-clickable-row" onClick={()=>{window.location.href=`/crm/leads/${l.id}`;}}>
+        <td><a href={`/crm/leads/${l.id}`} className="crm-lead-link"><strong>{l.title}</strong></a><small>{l.company || l.email || l.phone || "No secondary detail"}</small></td>
         <td><span className={`crm-badge ${l.source==="engagex"?"engagex":""}`}><i /> {l.source==="engagex"?"ENGAGEX":l.source}</span></td>
         <td>{l.priority}</td><td>{l.score}</td><td>{formatMoney(l.value || 0)}</td>
-        <td onClick={(e) => e.stopPropagation()}><select className="crm-status-select" value={l.status} onChange={(e) => updateLeadStatus(l.id, e.target.value)}>{statuses.map((s) => <option key={s}>{s}</option>)}</select></td>
-        <td>{shortDate(l.created_at)}</td>
+        <td onClick={e=>e.stopPropagation()}><select disabled={busy} className="crm-status-select" value={l.status} onChange={(e) => updateLeadStatus(l.id, e.target.value)}>{statuses.map((s) => <option key={s}>{s}</option>)}</select></td>
+        <td>{shortDate(l.created_at)}</td><td onClick={e=>e.stopPropagation()}><button onClick={()=>onEdit(l)}>Edit / Archive</button></td>
       </tr>)}
     </tbody></table></div> : <EmptyState icon={Users} title="No leads found" text="Create your first lead or change the current search/filter." />}
   </>;
-}
-
-function PipelineView({ pipeline, openLead }: { pipeline: any; openLead: (id: string) => void }) {
-  return <div className="pipeline-board">
-    {pipeline.map((col: any) => <div className="pipeline-col" key={col.stage}>
-      <div className="pipeline-head"><b>{col.stage.toUpperCase()}</b><span>{col.items.length}</span></div>
-      {col.items.map((l: Lead) => <motion.button type="button" className="pipeline-card" key={l.id} onClick={() => openLead(l.id)} whileHover={{ y: -4, scale: 1.012 }} whileTap={{ scale: .985 }}><strong>{l.title}</strong><span>{l.company || l.source}</span><em>{formatMoney(l.value || 0)}</em></motion.button>)}
-    </div>)}
-  </div>;
 }
 
 function IntegrationsView({ integrations }: any) {
@@ -435,11 +434,13 @@ function IntegrationsView({ integrations }: any) {
     const {data}=await crmSupabase.auth.getSession();
     const token=data.session?.access_token;
     if(!token){setSyncing(false);setSyncMessage("Authentication required.");return;}
+    try{
     const res=await fetch("/api/integrations/engagex/sync",{method:"POST",headers:{Authorization:`Bearer ${token}`}});
     const body=await res.json().catch(()=>({}));
     setSyncing(false);
     if(res.ok) setSyncMessage(`EngageX sync complete: ${body.synced||0} synced, ${body.failed||0} failed.`);
     else setSyncMessage(body.message||body.error||"EngageX sync failed.");
+    }catch{setSyncMessage("EngageX network request could not be confirmed. Refresh before retrying.");}finally{setSyncing(false);}
   }
 
   return <div>
@@ -450,20 +451,6 @@ function IntegrationsView({ integrations }: any) {
       {x.provider==="engagex"&&<button onClick={syncEngageX} disabled={syncing}>{syncing?<Loader2 size={13}/>:<RefreshCw size={13}/>} Sync EngageX Leads</button>}
     </motion.div>)}</div>
   </div>;
-}
-
-function SimpleList({ title, icon: Icon, items, empty }: any) {
-  if (!items.length) return <EmptyState icon={Icon} title={`No ${title.toLowerCase()}`} text={empty} />;
-  return <div className="crm-panel"><div className="crm-panel-head"><h3>{title}</h3><span>{items.length} records</span></div><div className="crm-activity-list">
-    {items.map((x: any) => <div className="crm-activity" key={x.id}><i /><div><b>{x.title || x.name || x.contact_name || "Record"}</b><span>{x.status || x.trigger_type || x.channel || ""}</span></div><time>{shortDate(x.created_at || x.updated_at || x.last_message_at)}</time></div>)}
-  </div></div>;
-}
-
-function SettingsView({ workspace }: any) {
-  return <div className="crm-dashboard-grid"><div className="crm-panel"><div className="crm-panel-head"><h3>Workspace</h3><span>Isolated CRM namespace</span></div><div className="crm-activity-list">
-    <div className="crm-activity"><i /><div><b>{workspace?.company_name || "Savrdh Technology"}</b><span>Workspace: {workspace?.slug}</span></div><time>{workspace?.status || "active"}</time></div>
-    <div className="crm-activity"><i /><div><b>Database Isolation</b><span>Schema: sav_ai_crm — designed for later migration</span></div><time>Ready</time></div>
-  </div></div><EmptyState icon={Settings} title="Configuration center" text="Provider credentials, channel policies and organization settings can be added here next." /></div>;
 }
 
 function EmptyState({ icon: Icon, title, text }: any) {

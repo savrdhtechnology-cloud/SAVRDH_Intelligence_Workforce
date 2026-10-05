@@ -1,8 +1,9 @@
+import { withApiErrors } from "../../../lib/ai/api-errors";
 import { NextRequest } from "next/server";
 import { AgentCapability, ACTION_RISK, requiresHumanApproval } from "../../crm/agents/agent-types";
 import { bearerPresent,jsonError,serverSupabase } from "../../../lib/ai/server-supabase";
 
-export async function POST(req:NextRequest){
+async function handlePOST(req:NextRequest){
  if(!bearerPresent(req)) return jsonError("Authentication required",401,"UNAUTHORIZED");
  const body=await req.json().catch(()=>null) as null|{agentId?:string;action?:AgentCapability;target?:{type?:string;id?:string|null};payload?:Record<string,unknown>};
  if(!body?.agentId || !body.action || !body.target?.type) return jsonError("agentId, action and target.type are required",422,"VALIDATION_ERROR");
@@ -17,3 +18,5 @@ export async function POST(req:NextRequest){
  if(executeError) return jsonError(executeError.message,409,"AGENT_ACTION_FAILED");
  return Response.json(executed);
 }
+
+export const POST=withApiErrors(handlePOST);

@@ -1,7 +1,8 @@
+import { withApiErrors } from "../../../lib/ai/api-errors";
 import { NextRequest } from "next/server";
 import { bearerPresent,jsonError,serverSupabase } from "../../../lib/ai/server-supabase";
 import { dispatchNotification } from "../../../lib/notifications/dispatch";
-export async function GET(req:NextRequest){
+async function handleGET(req:NextRequest){
  if(!bearerPresent(req))return jsonError("Authentication required",401,"UNAUTHORIZED");
  const s=serverSupabase(req),q=req.nextUrl.searchParams;
  const args={p_search:q.get("search")||null,p_channel:q.get("channel")||null,p_type:q.get("type")||null,p_status:q.get("status")||null,p_priority:q.get("priority")||null,p_recipient:q.get("recipient")||null,p_source:q.get("source")||null,p_agent:q.get("agent")||null,p_workflow:q.get("workflow")||null,p_read_state:q.get("read")||null,p_date_from:q.get("from")||null,p_date_to:q.get("to")||null};
@@ -9,7 +10,7 @@ export async function GET(req:NextRequest){
  if(error)return jsonError(error.message,403,"NOTIFICATION_LIST_FAILED");if(me)return jsonError(me.message,403,"NOTIFICATION_METRICS_FAILED");if(ue)return jsonError(ue.message,403,"NOTIFICATION_UPCOMING_FAILED");if(ce)return jsonError(ce.message,403,"NOTIFICATION_CONTEXT_FAILED");
  return Response.json({notifications:notifications||[],metrics:metrics||{},upcoming:upcoming||[],context});
 }
-export async function POST(req:NextRequest){
+async function handlePOST(req:NextRequest){
  if(!bearerPresent(req))return jsonError("Authentication required",401,"UNAUTHORIZED");
  const b=await req.json().catch(()=>null) as any;if(!b)return jsonError("Invalid request body",422,"VALIDATION_ERROR");const s=serverSupabase(req);
  if(b.agentActionId){
@@ -30,3 +31,5 @@ export async function POST(req:NextRequest){
  const {data:d}=await s.rpc("sav_ai_crm_notification_detail",{p_notification_id:id});if(d?.notification?.status==="QUEUED"){const result=await dispatchNotification(req,String(id));if(!result.ok)return Response.json({notification_id:id,error:result.error,message:result.message},{status:result.status});return Response.json(result,{status:201});}
  return Response.json({notification_id:id,status:d?.notification?.status||"QUEUED"},{status:201});
 }
+export const GET=withApiErrors(handleGET);
+export const POST=withApiErrors(handlePOST);

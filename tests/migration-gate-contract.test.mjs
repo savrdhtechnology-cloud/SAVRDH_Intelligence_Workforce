@@ -35,7 +35,8 @@ const additionalMigrationFiles=[
  "supabase/migrations/20261004_sav_sales_agent_engine_phase1.sql",
  "supabase/migrations/20261004_engagex_sales_workflow_phase2.sql"
 ];
-const migrationSql=[...migrationFiles,...additionalMigrationFiles].map(p=>readFileSync(join(root,p),"utf8"));
+const allMigrations=readdirSync(join(root,"supabase/migrations")).filter(p=>p.endsWith(".sql")).map(p=>"supabase/migrations/"+p);
+const migrationSql=[...migrationFiles,...additionalMigrationFiles,...allMigrations.filter(p=>![...migrationFiles,...additionalMigrationFiles].includes(p))].map(p=>readFileSync(join(root,p),"utf8"));
 const definitions=migrationSql.flatMap(functionDefs);
 const definitionNames=new Set(definitions.map(x=>x.name));
 

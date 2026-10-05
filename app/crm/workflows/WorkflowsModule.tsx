@@ -285,7 +285,7 @@ function NodeInspector({node,agents,onChange,onConnect,onDelete}:{node:WorkflowN
     <b>{node.type}</b>
     <label>Label<input value={node.label} onChange={e=>onChange({...node,label:e.target.value})}/></label>
     {node.type==="AI_AGENT"&&<label>Agent<select value={String(node.config.agent_id||"")} onChange={e=>onChange({...node,config:{...node.config,agent_id:e.target.value}})}><option value="">Select agent</option>{agents.map(a=><option key={a.id} value={a.id}>{a.display_name||a.name}</option>)}</select></label>}
-    <label>Configuration JSON<textarea value={json} onChange={e=>{setJson(e.target.value);try{onChange({...node,config:JSON.parse(e.target.value)})}catch{}}}/></label>
+    <label>Configuration JSON<textarea value={json} onChange={e=>{setJson(e.target.value);e.target.setCustomValidity("");try{onChange({...node,config:JSON.parse(e.target.value)})}catch{e.target.setCustomValidity("Configuration must be valid JSON");}}}/></label>
     <div className="workflow-inspector-actions"><button onClick={onConnect}><GitBranch size={11}/>Connect from node</button>{!["TRIGGER","END"].includes(node.type)&&<button className="danger" onClick={onDelete}><Trash2 size={11}/>Delete node</button>}</div>
   </div>;
 }

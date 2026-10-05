@@ -183,5 +183,5 @@ test("provider boundary remains fail-closed and does not fabricate planning outp
   assert.doesNotMatch(provider,/mock|fake response|dummy/i);
   assert.match(executeApi,/analyzeSalesLead/);
   assert.match(executeApi,/executeSalesDecision/);
-  assert.match(executeApi,/getAIProvider\(\)\.planAction/);
+  assert.match(readFileSync(new URL("../lib/ai/agent-engine.ts",import.meta.url),"utf8"),/getAIProvider\(\)\.planAction/);
 });

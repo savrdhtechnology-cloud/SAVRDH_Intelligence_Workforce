@@ -1,3 +1,4 @@
+import { crmFetch } from "../request";
 import { crmSupabase } from "../supabase-client";
 import { WorkflowGraph, WorkflowRecord } from "./workflow-types";
 
@@ -8,7 +9,7 @@ async function headers(){
   return {Authorization:`Bearer ${token}`,"Content-Type":"application/json"};
 }
 async function api<T>(url:string,init?:RequestInit):Promise<T>{
-  const res=await fetch(url,{...init,headers:{...(await headers()),...(init?.headers||{})}});
+  const res=await crmFetch(url,{...init,headers:{...(await headers()),...(init?.headers||{})}});
   const body=await res.json().catch(()=>({}));
   if(!res.ok)throw new Error(body.message||body.error||"Workflow request failed");
   return body as T;

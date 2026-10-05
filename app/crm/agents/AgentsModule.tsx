@@ -23,6 +23,8 @@ export default function AgentsModule({focusedId}:{focusedId?:string}){
   const [leads,setLeads]=useState<any[]>([]);
   const [testResult,setTestResult]=useState<any>(null);
   const [agentRunning,setAgentRunning]=useState(false);
+  const [busy,setBusy]=useState(false);
+  const [invalidJson,setInvalidJson]=useState(false);
 
   async function refresh(){
     setLoading(true);setError("");
@@ -31,32 +33,33 @@ export default function AgentsModule({focusedId}:{focusedId?:string}){
       setAgents(data.agents);setMetrics(data.metrics);
       const id=focusedId||selected||data.agents[0]?.id;
       if(id){setSelected(id);setDetail(await getAgent(id));}
-      const {data:leadData}=await crmSupabase.rpc("sav_ai_crm_list_leads",{p_status:null,p_search:null});
-      setLeads(leadData||[]);
+      const {data:leadData,error:leadError}=await crmSupabase.rpc("sav_ai_crm_list_leads",{p_status:null,p_search:null});
+      if(leadError)throw new Error(leadError.message);setLeads(leadData||[]);
     }catch(e){setError(e instanceof Error?e.message:"Could not load agents.");}
     finally{setLoading(false);}
   }
   useEffect(()=>{refresh();},[focusedId]);
 
-  async function openAgent(id:string){setSelected(id);setLoading(true);try{setDetail(await getAgent(id));setTab("Overview");}catch(e){setError(e instanceof Error?e.message:"Could not load agent.");}finally{setLoading(false);}}
+  async function openAgent(id:string){setInvalidJson(false);setTestResult(null);setDetail(null);setSelected(id);setLoading(true);try{setDetail(await getAgent(id));setTab("Overview");}catch(e){setError(e instanceof Error?e.message:"Could not load agent.");}finally{setLoading(false);}}
   async function status(next:"active"|"paused"|"disabled"){
-    if(!selected)return; setError("");setSuccess("");
-    try{await setAgentStatus(selected,next);setSuccess("Agent status updated.");await refresh();}catch(e){setError(e instanceof Error?e.message:"Status update failed.");}
+    if(!selected||busy)return; setBusy(true);setTestResult(null);setError("");setSuccess("");
+    try{await setAgentStatus(selected,next);setSuccess("Agent status updated.");await refresh();}catch(e){setError(e instanceof Error?e.message:"Status update failed.");}finally{setBusy(false);}
   }
   async function save(){
-    if(!selected||!detail?.agent)return;
+    if(!selected||!detail?.agent||busy||invalidJson)return;
+    setBusy(true);setError("");setSuccess("");
     try{
       await updateAgent(selected,{
         display_name:detail.agent.display_name,
         description:detail.agent.description||"",
         channels:detail.agent.channels||[],
-        confidence_threshold:Number(detail.agent.confidence_threshold||0.7),
+        confidence_threshold:Number(detail.agent.confidence_threshold??0.7),
         working_hours:detail.agent.working_hours||{},
         daily_limits:detail.agent.daily_limits||{},
         escalation_rules:detail.agent.escalation_rules||{}
       });
       setSuccess("Agent settings saved.");await refresh();
-    }catch(e){setError(e instanceof Error?e.message:"Save failed.");}
+    }catch(e){setError(e instanceof Error?e.message:"Save failed.");}finally{setBusy(false);}
   }
   async function runAnalyze(){
     if(!selected||!leadId||!testInput.trim())return;
@@ -99,13 +102,13 @@ export default function AgentsModule({focusedId}:{focusedId?:string}){
     }finally{setAgentRunning(false);}
   }
   async function review(actionId:string,decision:"approve"|"reject"){
-    setError("");setSuccess("");
+    if(busy)return;setBusy(true);setError("");setSuccess("");
     try{
       await reviewAgentAction(actionId,decision,decision==="approve"?"Approved from agent detail":"Rejected from agent detail");
       setSuccess(decision==="approve"?"Action approved.":"Action rejected.");
       if(selected)setDetail(await getAgent(selected));
       const data=await listAgents();setMetrics(data.metrics);
-    }catch(e){setError(e instanceof Error?e.message:"Approval review failed.");}
+    }catch(e){setError(e instanceof Error?e.message:"Approval review failed.");}finally{setBusy(false);}
   }
 
 
@@ -144,23 +147,23 @@ export default function AgentsModule({focusedId}:{focusedId?:string}){
             <div className="agent-head-actions">
               {detail.permissions?.manage&&<>
                 {current.status==="active"&&<>
-                  <button onClick={()=>status("paused")} disabled={loading}><Pause size={13}/>Pause</button>
-                  <button onClick={()=>status("disabled")} disabled={loading}><ShieldAlert size={13}/>Deactivate</button>
+                  <button onClick={()=>status("paused")} disabled={busy||loading}><Pause size={13}/>Pause</button>
+                  <button onClick={()=>status("disabled")} disabled={busy||loading}><ShieldAlert size={13}/>Deactivate</button>
                 </>}
                 {current.status==="paused"&&<>
-                  <button onClick={()=>status("active")} disabled={loading}><Play size={13}/>Resume</button>
-                  <button onClick={()=>status("disabled")} disabled={loading}><ShieldAlert size={13}/>Deactivate</button>
+                  <button onClick={()=>status("active")} disabled={busy||loading}><Play size={13}/>Resume</button>
+                  <button onClick={()=>status("disabled")} disabled={busy||loading}><ShieldAlert size={13}/>Deactivate</button>
                 </>}
                 {current.status==="disabled"&&
-                  <button onClick={()=>status("active")} disabled={loading}><Play size={13}/>Activate</button>
+                  <button onClick={()=>status("active")} disabled={busy||loading}><Play size={13}/>Activate</button>
                 }
-                <button className="primary" onClick={save} disabled={loading}><Save size={13}/>Save</button>
+                <button className="primary" onClick={save} disabled={busy||invalidJson}><Save size={13}/>Save</button>
               </>}
               <Link href={`/crm/agents/${current.id}`}>Open Detail</Link>
             </div>
           </div>
 
-          <div className="agent-tabs">{tabs.map(x=><button key={x} className={tab===x?"active":""} onClick={()=>setTab(x)}>{x}</button>)}</div>
+          <div className="agent-tabs">{tabs.map(x=><button key={x} className={tab===x?"active":""} onClick={()=>{setInvalidJson(false);setTab(x);}}>{x}</button>)}</div>
           <div className="agent-tab-body">
             {tab==="Overview"&&<><Overview detail={detail}/><ApprovalQueue rows={detail.approvals||[]} onReview={review}/></>}
             {tab==="Role & Instructions"&&<EditBasics detail={detail} setDetail={setDetail}/>}
@@ -169,22 +172,22 @@ export default function AgentsModule({focusedId}:{focusedId?:string}){
             {tab==="Channels"&&<ChannelEditor detail={detail} setDetail={setDetail}/>}
             {tab==="Knowledge"&&<RecordList rows={detail.knowledge||[]} empty="No knowledge scopes assigned."/>}
             {tab==="Workflows"&&<RecordList rows={detail.workflows||[]} empty="No workflow access configured."/>}
-            {tab==="Working Hours"&&<JsonEditor label="Working hours" value={detail.agent.working_hours||{}} onChange={v=>setDetail({...detail,agent:{...detail.agent,working_hours:v}})}/>}
-            {tab==="Limits"&&<JsonEditor label="Daily limits" value={detail.agent.daily_limits||{}} onChange={v=>setDetail({...detail,agent:{...detail.agent,daily_limits:v}})}/>}
-            {tab==="Escalation"&&<><JsonEditor label="Escalation rules" value={detail.agent.escalation_rules||{}} onChange={v=>setDetail({...detail,agent:{...detail.agent,escalation_rules:v}})}/><RecordList rows={detail.escalations||[]} empty="No escalations yet."/></>}
+            {tab==="Working Hours"&&<JsonEditor onValidityChange={setInvalidJson} key={selected+tab} label="Working hours" value={detail.agent.working_hours||{}} onChange={v=>setDetail({...detail,agent:{...detail.agent,working_hours:v}})}/>}
+            {tab==="Limits"&&<JsonEditor onValidityChange={setInvalidJson} key={selected+tab} label="Daily limits" value={detail.agent.daily_limits||{}} onChange={v=>setDetail({...detail,agent:{...detail.agent,daily_limits:v}})}/>}
+            {tab==="Escalation"&&<><JsonEditor onValidityChange={setInvalidJson} key={selected+tab} label="Escalation rules" value={detail.agent.escalation_rules||{}} onChange={v=>setDetail({...detail,agent:{...detail.agent,escalation_rules:v}})}/><RecordList rows={detail.escalations||[]} empty="No escalations yet."/></>}
             {tab==="Activity"&&<RecordList rows={[...(detail.executions||[]),...(detail.actions||[])].sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)))} empty="No agent activity yet."/>}
             {tab==="Audit"&&<RecordList rows={detail.audit||[]} empty="No audit events yet."/>}
           </div>
 
           <div className="agent-test-console">
             <div className="agent-console-head"><TestTube2 size={15}/><div><b>Agent Test Console</b><span>{current.status==="active"?"Active agent — ready to work":"Agent is "+current.status+" — enable it to run work"}</span></div></div>
-            <label>Context / Lead<select value={leadId} onChange={e=>setLeadId(e.target.value)}><option value="">No lead context</option>{leads.map(l=><option key={l.id} value={l.id}>{l.title}</option>)}</select></label>
-            <label>Test input<textarea value={testInput} onChange={e=>setTestInput(e.target.value)} placeholder="Describe what the agent should analyze or plan..."/></label>
+            <label>Context / Lead<select value={leadId} onChange={e=>{setLeadId(e.target.value);setTestResult(null);}}><option value="">No lead context</option>{leads.map(l=><option key={l.id} value={l.id}>{l.title}</option>)}</select></label>
+            <label>Test input<textarea value={testInput} onChange={e=>{setTestInput(e.target.value);setTestResult(null);}} placeholder="Describe what the agent should analyze or plan..."/></label>
             <div className="agent-head-actions">
               <button className="task-new-btn" onClick={runAnalyze} disabled={current.status!=="active"||agentRunning||!leadId||!testInput.trim()}>
                 {agentRunning?<Loader2 size={13} className="spin"/>:<Activity size={13}/>}Analyze & Plan
               </button>
-              {current.slug==="sav-sales"&&testResult?.mode==="analyze"&&testResult?.result?.decision&&
+              {testResult?.mode==="analyze"&&testResult?.result?.decision&&
                 <button onClick={runExecute} disabled={current.status!=="active"||agentRunning}>
                   <Play size={13}/>Execute Approved Actions
                 </button>}
@@ -212,11 +215,14 @@ function Overview({detail}:{detail:any}){return <div className="agent-overview-g
 function Info({label,value}:{label:string;value:string}){return <div className="crm-card"><span>{label}</span><strong>{value}</strong></div>}
 function EditBasics({detail,setDetail}:{detail:any;setDetail:(v:any)=>void}){return <div className="crm-form">
   <label>Display name<input value={detail.agent.display_name||""} onChange={e=>setDetail({...detail,agent:{...detail.agent,display_name:e.target.value}})}/></label>
-  <label>Confidence threshold<input type="number" min="0" max="1" step="0.01" value={detail.agent.confidence_threshold||0.7} onChange={e=>setDetail({...detail,agent:{...detail.agent,confidence_threshold:Number(e.target.value)}})}/></label>
+  <label>Confidence threshold<input type="number" min="0" max="1" step="0.01" value={detail.agent.confidence_threshold??0.7} onChange={e=>setDetail({...detail,agent:{...detail.agent,confidence_threshold:Number(e.target.value)}})}/></label>
   <label className="full">Role<input value={detail.agent.role_name||""} disabled/></label>
   <label className="full">Instructions / description<textarea value={detail.agent.description||""} onChange={e=>setDetail({...detail,agent:{...detail.agent,description:e.target.value}})}/></label>
 </div>}
 function CapabilityView({rows}:{rows:any[]}){return <div className="agent-cap-grid">{rows.map(x=><div className="crm-card" key={x.id}><b>{x.capability}</b><span>{x.risk_level} risk</span><em>{x.approval_required?"Approval required":"Direct internal action"}</em></div>)}</div>}
 function ChannelEditor({detail,setDetail}:{detail:any;setDetail:(v:any)=>void}){const all=["crm","voice","whatsapp","sms","email","webchat"];return <div className="agent-channel-grid">{all.map(c=><label key={c}><input type="checkbox" checked={(detail.agent.channels||[]).includes(c)} onChange={e=>{const set=new Set(detail.agent.channels||[]);e.target.checked?set.add(c):set.delete(c);setDetail({...detail,agent:{...detail.agent,channels:[...set]}})}}/>{c}</label>)}</div>}
-function JsonEditor({label,value,onChange}:{label:string;value:Record<string,unknown>;onChange:(v:Record<string,unknown>)=>void}){const [text,setText]=useState(JSON.stringify(value,null,2));return <label className="agent-json">{label}<textarea value={text} onChange={e=>{setText(e.target.value);try{onChange(JSON.parse(e.target.value))}catch{}}}/></label>}
+function JsonEditor({label,value,onChange,onValidityChange}:{label:string;value:Record<string,unknown>;onChange:(v:Record<string,unknown>)=>void;onValidityChange:(invalid:boolean)=>void}){
+ const [text,setText]=useState(JSON.stringify(value,null,2)),[error,setError]=useState("");
+ return <label className="agent-json">{label}<textarea value={text} onChange={e=>{setText(e.target.value);try{const parsed=JSON.parse(e.target.value);if(!parsed||typeof parsed!=="object"||Array.isArray(parsed))throw new Error();onChange(parsed);setError("");onValidityChange(false);}catch{onValidityChange(true);setError("Invalid JSON object. These edits have not been applied; correct them before saving.");}}}/>{error&&<span role="alert" className="task-error">{error}</span>}</label>;
+}
 function RecordList({rows,empty}:{rows:any[];empty:string}){if(!rows.length)return <div className="crm-empty"><div><CheckCircle2 size={22}/><p>{empty}</p></div></div>;return <div className="crm-activity-list">{rows.map((x,i)=><div className="crm-activity" key={x.id||i}><i/><div><b>{x.title||x.action||x.command||x.knowledge_scope||x.workflow_key||x.status||"Record"}</b><span>{x.description||x.error||x.execution_status||x.risk_level||x.access_level||""}</span></div><time>{x.created_at?new Date(x.created_at).toLocaleDateString("en-IN"):""}</time></div>)}</div>}

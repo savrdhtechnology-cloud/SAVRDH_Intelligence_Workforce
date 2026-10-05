@@ -1,7 +1,8 @@
+import { crmFetch } from "../request";
 import { crmSupabase } from "../supabase-client";
 import { NotificationDetail,NotificationListResponse,NotificationPreference,NotificationSchedule,NotificationTemplate } from "./notification-types";
 async function headers(){const {data}=await crmSupabase.auth.getSession();const token=data.session?.access_token;if(!token)throw new Error("Authentication required.");return {Authorization:"Bearer "+token,"Content-Type":"application/json"};}
-async function api<T>(url:string,init?:RequestInit):Promise<T>{const res=await fetch(url,{...init,headers:{...(await headers()),...(init?.headers||{})}});const b=await res.json().catch(()=>({}));if(!res.ok)throw new Error(b.message||b.error||"Notification request failed");return b as T;}
+async function api<T>(url:string,init?:RequestInit):Promise<T>{const res=await crmFetch(url,{...init,headers:{...(await headers()),...(init?.headers||{})}});const b=await res.json().catch(()=>({}));if(!res.ok)throw new Error(b.message||b.error||"Notification request failed");return b as T;}
 export const listNotifications=(q="")=>api<NotificationListResponse>("/api/notifications"+(q?"?"+q:""));
 export const getNotification=(id:string)=>api<NotificationDetail>("/api/notifications/"+id);
 export const createNotification=(input:Record<string,unknown>)=>api<any>("/api/notifications",{method:"POST",body:JSON.stringify(input)});
