@@ -119,6 +119,7 @@ export default function WorkflowsModule({focusedId}:{focusedId?:string}){
   const latestExecution=detail?.executions?.[0]||null;
   const executingNodeId=latestExecution?.current_node_id||null;
   const executionState=latestExecution?.execution_state||null;
+  const latestNodeExecutions=detail?.latest_node_executions||[];
 
   if(loading&&!workflows.length)return <div className="workflow-loading"><Loader2 size={20} className="spin"/> Loading workflow engine...</div>;
 
@@ -227,6 +228,7 @@ export default function WorkflowsModule({focusedId}:{focusedId?:string}){
               connectFrom={connectFrom}
               executingNodeId={executingNodeId}
               executionState={executionState}
+              nodeExecutions={latestNodeExecutions}
               onNodeClick={nodeClick}
               onMove={(id,pos)=>setGraph(g=>({...g,nodes:g.nodes.map(n=>n.id===id?{...n,position:pos}:n)}))}
             />
@@ -267,13 +269,14 @@ function Metric({label,value}:{label:string;value:number}){return <motion.div
 ><span>{label}</span><strong>{value}</strong></motion.div>}
 
 function WorkflowCanvas({
-  graph,selectedNode,connectFrom,executingNodeId,executionState,onNodeClick,onMove
+  graph,selectedNode,connectFrom,executingNodeId,executionState,nodeExecutions,onNodeClick,onMove
 }:{
   graph:WorkflowGraph;
   selectedNode:string|null;
   connectFrom:string|null;
   executingNodeId:string|null;
   executionState:string|null;
+  nodeExecutions:Array<{node_key:string;status:string}>;
   onNodeClick:(id:string)=>void;
   onMove:(id:string,pos:{x:number;y:number})=>void;
 }){
@@ -350,6 +353,7 @@ function WorkflowCanvas({
     window.addEventListener("pointermove",move);window.addEventListener("pointerup",up);
   }
   const byId=new Map(graph.nodes.map(n=>[n.id,n]));
+  const nodeState=new Map(nodeExecutions.map(x=>[x.node_key,x.status]));
   const currentClass=executionState==="failed"
     ?"exec-failed"
     :executionState==="waiting"||executionState==="waiting_approval"
@@ -376,23 +380,30 @@ function WorkflowCanvas({
       <svg className="workflow-edge-layer">{graph.edges.map(e=>{const s=byId.get(e.source),t=byId.get(e.target);if(!s||!t)return null;const x1=s.position.x+190,y1=s.position.y+36,x2=t.position.x,y2=t.position.y+36;return <g key={e.id}><path d={`M ${x1} ${y1} C ${x1+70} ${y1}, ${x2-70} ${y2}, ${x2} ${y2}`}/>{e.branch&&<text x={(x1+x2)/2} y={(y1+y2)/2-6}>{e.branch}</text>}</g>})}</svg>
       {graph.nodes.map((n,index)=>{
         const isExecuting=executingNodeId===n.id;
+        const persisted=nodeState.get(n.id)||"";
+        const persistedClass=
+          persisted==="completed"?"exec-completed":
+          persisted==="failed"?"exec-failed":
+          persisted==="waiting"||persisted==="waiting_approval"?"exec-waiting":
+          persisted==="running"||persisted==="retrying"?"exec-running":"";
+        const nodeProcessClass=isExecuting?currentClass:persistedClass;
         return <motion.button
           key={n.id}
           onPointerDown={e=>down(e,n)}
           onClick={()=>onNodeClick(n.id)}
-          className={`workflow-node node-${n.type.toLowerCase()} ${selectedNode===n.id?"selected":""} ${connectFrom===n.id?"connecting":""} ${isExecuting?currentClass:""}`}
+          className={`workflow-node node-${n.type.toLowerCase()} ${selectedNode===n.id?"selected":""} ${connectFrom===n.id?"connecting":""} ${nodeProcessClass}`}
           style={{left:n.position.x,top:n.position.y}}
           initial={{opacity:0,scale:.92,y:8}}
-          animate={isExecuting&&currentClass==="exec-running"
+          animate={nodeProcessClass==="exec-running"
             ? {opacity:1,scale:[1,1.025,1],y:0}
             : {opacity:1,scale:1,y:0}}
-          transition={isExecuting&&currentClass==="exec-running"
+          transition={nodeProcessClass==="exec-running"
             ? {duration:1.8,repeat:Infinity,ease:"easeInOut"}
             : {duration:.24,delay:Math.min(index*.035,.25),ease:[.22,1,.36,1]}}
           whileHover={{scale:1.025,y:-2}}
           whileTap={{scale:.985}}
         >
-          {isExecuting&&<i className="workflow-exec-dot"/>}
+          {nodeProcessClass&&<i className="workflow-exec-dot"/>}
           <span>{n.type}</span><b>{n.label}</b><small>{nodeSummary(n)}</small>
         </motion.button>;
       })}
