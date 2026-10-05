@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { FormEvent, PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity, Archive, Bot, CheckCircle2, CircleAlert, Copy, GitBranch, Loader2,
-  Pause, Play, Plus, Save, TestTube2, Trash2, Workflow, X, Zap
+  Minus, Pause, Play, Plus, Save, Scan, TestTube2, Trash2, Workflow, X, Zap
 } from "lucide-react";
 import { crmSupabase } from "../supabase-client";
 import {
@@ -116,6 +116,9 @@ export default function WorkflowsModule({focusedId}:{focusedId?:string}){
   function updateNode(node:WorkflowNode){setGraph(g=>({...g,nodes:g.nodes.map(n=>n.id===node.id?node:n)}));}
 
   const selectedNodeRecord=useMemo(()=>graph.nodes.find(n=>n.id===selectedNode)||null,[graph,selectedNode]);
+  const latestExecution=detail?.executions?.[0]||null;
+  const executingNodeId=latestExecution?.current_node_id||null;
+  const executionState=latestExecution?.execution_state||null;
 
   if(loading&&!workflows.length)return <div className="workflow-loading"><Loader2 size={20} className="spin"/> Loading workflow engine...</div>;
 
@@ -206,7 +209,15 @@ export default function WorkflowsModule({focusedId}:{focusedId?:string}){
               <b>Nodes</b>
               {WORKFLOW_NODE_TYPES.filter(t=>!["TRIGGER","END"].includes(t)).map(t=><button key={t} onClick={()=>addNode(t)}><Plus size={10}/>{t.replaceAll("_"," ")}</button>)}
             </div>
-            <WorkflowCanvas graph={graph} selectedNode={selectedNode} connectFrom={connectFrom} onNodeClick={nodeClick} onMove={(id,pos)=>setGraph(g=>({...g,nodes:g.nodes.map(n=>n.id===id?{...n,position:pos}:n)}))}/>
+            <WorkflowCanvas
+              graph={graph}
+              selectedNode={selectedNode}
+              connectFrom={connectFrom}
+              executingNodeId={executingNodeId}
+              executionState={executionState}
+              onNodeClick={nodeClick}
+              onMove={(id,pos)=>setGraph(g=>({...g,nodes:g.nodes.map(n=>n.id===id?{...n,position:pos}:n)}))}
+            />
             <div className="workflow-inspector">
               {selectedNodeRecord?<NodeInspector node={selectedNodeRecord} agents={agents} onChange={updateNode} onConnect={()=>setConnectFrom(selectedNodeRecord.id)} onDelete={()=>removeNode(selectedNodeRecord.id)}/>:<>
                 <b>Inspector</b><p>Select a node to edit its persisted configuration.</p>
@@ -243,38 +254,96 @@ function Metric({label,value}:{label:string;value:number}){return <motion.div
   transition={{duration:.22,ease:[.22,1,.36,1]}}
 ><span>{label}</span><strong>{value}</strong></motion.div>}
 
-function WorkflowCanvas({graph,selectedNode,connectFrom,onNodeClick,onMove}:{graph:WorkflowGraph;selectedNode:string|null;connectFrom:string|null;onNodeClick:(id:string)=>void;onMove:(id:string,pos:{x:number;y:number})=>void}){
+function WorkflowCanvas({
+  graph,selectedNode,connectFrom,executingNodeId,executionState,onNodeClick,onMove
+}:{
+  graph:WorkflowGraph;
+  selectedNode:string|null;
+  connectFrom:string|null;
+  executingNodeId:string|null;
+  executionState:string|null;
+  onNodeClick:(id:string)=>void;
+  onMove:(id:string,pos:{x:number;y:number})=>void;
+}){
   const canvas=useRef<HTMLDivElement>(null);
+  const [zoom,setZoom]=useState(1);
+
+  function clampZoom(next:number){return Math.min(1.6,Math.max(.55,next));}
+  function zoomBy(delta:number){setZoom(z=>clampZoom(Number((z+delta).toFixed(2))));}
+  function resetView(){setZoom(1);}
+  function fitView(){
+    if(!graph.nodes.length){resetView();return;}
+    const maxX=Math.max(...graph.nodes.map(n=>n.position.x+220));
+    const maxY=Math.max(...graph.nodes.map(n=>n.position.y+110));
+    const el=canvas.current;
+    if(!el){resetView();return;}
+    const next=Math.min(1,Math.max(.55,Math.min((el.clientWidth-40)/Math.max(maxX,1),(el.clientHeight-40)/Math.max(maxY,1))));
+    setZoom(Number(next.toFixed(2)));
+  }
+  function wheel(e:React.WheelEvent<HTMLDivElement>){
+    if(e.ctrlKey||e.metaKey){
+      e.preventDefault();
+      setZoom(z=>clampZoom(z+(e.deltaY<0?.08:-.08)));
+    }
+  }
   function down(e:ReactPointerEvent<HTMLButtonElement>,node:WorkflowNode){
-    if((e.target as HTMLElement).closest(".workflow-node-body-button"))return;
     const startX=e.clientX,startY=e.clientY,start=node.position;
-    const move=(ev:PointerEvent)=>onMove(node.id,{x:Math.max(10,start.x+ev.clientX-startX),y:Math.max(10,start.y+ev.clientY-startY)});
+    const move=(ev:PointerEvent)=>onMove(node.id,{
+      x:Math.max(10,start.x+(ev.clientX-startX)/zoom),
+      y:Math.max(10,start.y+(ev.clientY-startY)/zoom)
+    });
     const up=()=>{window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",up)};
     window.addEventListener("pointermove",move);window.addEventListener("pointerup",up);
   }
   const byId=new Map(graph.nodes.map(n=>[n.id,n]));
+  const currentClass=executionState==="failed"
+    ?"exec-failed"
+    :executionState==="waiting"||executionState==="waiting_approval"
+      ?"exec-waiting"
+      :executionState==="completed"
+        ?"exec-completed"
+        :"exec-running";
+
   return <motion.div
     className="workflow-canvas"
     ref={canvas}
+    onWheel={wheel}
     initial={{opacity:0,scale:.99}}
     animate={{opacity:1,scale:1}}
     transition={{duration:.32,ease:[.22,1,.36,1]}}
   >
-    <svg className="workflow-edge-layer">{graph.edges.map(e=>{const s=byId.get(e.source),t=byId.get(e.target);if(!s||!t)return null;const x1=s.position.x+160,y1=s.position.y+30,x2=t.position.x,y2=t.position.y+30;return <g key={e.id}><path d={`M ${x1} ${y1} C ${x1+70} ${y1}, ${x2-70} ${y2}, ${x2} ${y2}`}/>{e.branch&&<text x={(x1+x2)/2} y={(y1+y2)/2-6}>{e.branch}</text>}</g>})}</svg>
-    {graph.nodes.map((n,index)=><motion.button
-      key={n.id}
-      onPointerDown={e=>down(e,n)}
-      onClick={()=>onNodeClick(n.id)}
-      className={`workflow-node node-${n.type.toLowerCase()} ${selectedNode===n.id?"selected":""} ${connectFrom===n.id?"connecting":""}`}
-      style={{left:n.position.x,top:n.position.y}}
-      initial={{opacity:0,scale:.92,y:8}}
-      animate={{opacity:1,scale:1,y:0}}
-      transition={{duration:.24,delay:Math.min(index*.035,.25),ease:[.22,1,.36,1]}}
-      whileHover={{scale:1.025,y:-2}}
-      whileTap={{scale:.985}}
-    >
-      <span>{n.type}</span><b>{n.label}</b><small>{nodeSummary(n)}</small>
-    </motion.button>)}
+    <div className="workflow-zoom-controls">
+      <button onClick={()=>zoomBy(-.1)} title="Zoom out"><Minus size={13}/></button>
+      <button className="workflow-zoom-value" onClick={resetView} title="Reset zoom">{Math.round(zoom*100)}%</button>
+      <button onClick={()=>zoomBy(.1)} title="Zoom in"><Plus size={13}/></button>
+      <button onClick={fitView} title="Fit workflow"><Scan size={13}/><span>Fit</span></button>
+    </div>
+
+    <div className="workflow-canvas-stage" style={{transform:`scale(${zoom})`,transformOrigin:"0 0"}}>
+      <svg className="workflow-edge-layer">{graph.edges.map(e=>{const s=byId.get(e.source),t=byId.get(e.target);if(!s||!t)return null;const x1=s.position.x+190,y1=s.position.y+36,x2=t.position.x,y2=t.position.y+36;return <g key={e.id}><path d={`M ${x1} ${y1} C ${x1+70} ${y1}, ${x2-70} ${y2}, ${x2} ${y2}`}/>{e.branch&&<text x={(x1+x2)/2} y={(y1+y2)/2-6}>{e.branch}</text>}</g>})}</svg>
+      {graph.nodes.map((n,index)=>{
+        const isExecuting=executingNodeId===n.id;
+        return <motion.button
+          key={n.id}
+          onPointerDown={e=>down(e,n)}
+          onClick={()=>onNodeClick(n.id)}
+          className={`workflow-node node-${n.type.toLowerCase()} ${selectedNode===n.id?"selected":""} ${connectFrom===n.id?"connecting":""} ${isExecuting?currentClass:""}`}
+          style={{left:n.position.x,top:n.position.y}}
+          initial={{opacity:0,scale:.92,y:8}}
+          animate={isExecuting&&currentClass==="exec-running"
+            ? {opacity:1,scale:[1,1.025,1],y:0}
+            : {opacity:1,scale:1,y:0}}
+          transition={isExecuting&&currentClass==="exec-running"
+            ? {duration:1.8,repeat:Infinity,ease:"easeInOut"}
+            : {duration:.24,delay:Math.min(index*.035,.25),ease:[.22,1,.36,1]}}
+          whileHover={{scale:1.025,y:-2}}
+          whileTap={{scale:.985}}
+        >
+          {isExecuting&&<i className="workflow-exec-dot"/>}
+          <span>{n.type}</span><b>{n.label}</b><small>{nodeSummary(n)}</small>
+        </motion.button>;
+      })}
+    </div>
   </motion.div>;
 }
 
