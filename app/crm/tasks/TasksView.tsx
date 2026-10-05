@@ -368,7 +368,7 @@ export default function TasksView({ onChanged }: Props) {
       ) : (
         <div className="task-list">
           {tasks.map((task) => (
-            <motion.article key={task.id} className={`task-card ${task.is_overdue ? "overdue" : ""} ${selectedTaskIds.includes(task.id) ? "selected" : ""}`} whileHover={{ y: -2 }}>
+            <motion.article key={task.id} className={`task-card task-status-${task.status} ${task.is_overdue ? "overdue" : ""} ${selectedTaskIds.includes(task.id) ? "selected" : ""}`} whileHover={{ y: -2 }}>
               <div className="task-select-cell">
                 <input type="checkbox" checked={selectedTaskIds.includes(task.id)} onChange={() => toggleTaskSelection(task.id)} />
               </div>
