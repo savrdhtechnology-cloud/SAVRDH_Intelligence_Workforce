@@ -16,6 +16,7 @@ import {
   Loader2,
   Plus,
   Play,
+  Pause,
   Search,
   Trash2,
   UserRound,
