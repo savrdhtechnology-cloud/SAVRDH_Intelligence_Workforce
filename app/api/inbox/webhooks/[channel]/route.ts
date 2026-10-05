@@ -1,15 +1,16 @@
+import { withApiErrors } from "../../../../../lib/ai/api-errors";
 import { NextRequest } from "next/server";
 import { serverAdminSupabase,jsonError } from "../../../../../lib/ai/server-supabase";
 import { resolveChannelAdapter } from "../../../../../lib/channels/server-registry";
 
-export async function POST(req:NextRequest,{params}:{params:Promise<{channel:string}>}){
+async function handlePOST(req:NextRequest,{params}:{params:Promise<{channel:string}>}){
   const {channel}=await params;
   let adapter;
   try{adapter=resolveChannelAdapter(channel);}catch{return jsonError("Unsupported channel",404,"WEBHOOK_UNSUPPORTED");}
 
   const raw=await req.text();
   let body:unknown=raw;
-  try{body=JSON.parse(raw);}catch{}
+  try{body=JSON.parse(raw);}catch{return jsonError("Invalid webhook JSON",422,"VALIDATION_ERROR");}
   const headers:Record<string,string>={};
   req.headers.forEach((v,k)=>{headers[k]=v;});
 
@@ -84,3 +85,5 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{channel:str
   });
   return Response.json({ok:true,conversation_id:persisted.conversation_id,message_id:persisted.message_id});
 }
+
+export const POST=withApiErrors(handlePOST);

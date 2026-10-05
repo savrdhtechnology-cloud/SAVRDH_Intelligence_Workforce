@@ -1,3 +1,4 @@
+import { withApiErrors } from "../../../../../lib/ai/api-errors";
 import { NextRequest } from "next/server";
 import { jsonError,serverAdminSupabase } from "../../../../../lib/ai/server-supabase";
 
@@ -8,7 +9,7 @@ function safeEqual(a:string,b:string){
   return diff===0;
 }
 
-export async function POST(req:NextRequest){
+async function handlePOST(req:NextRequest){
   const expected=(process.env.ENGAGEX_WEBHOOK_SECRET||"").trim();
   if(!expected) return jsonError("EngageX webhook is not configured.",503,"ENGAGEX_NOT_CONFIGURED");
   const supplied=(req.headers.get("x-engagex-sync-token")||"").trim();
@@ -26,3 +27,5 @@ export async function POST(req:NextRequest){
   }
   return Response.json({ok:true,lead_id:data});
 }
+
+export const POST=withApiErrors(handlePOST);

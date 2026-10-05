@@ -262,7 +262,7 @@ end $$;
 
 create or replace function public.sav_ai_crm_mark_sales_email_sent(
   p_draft_id uuid,p_provider_message_id text
-) returns jsonb language plpgsql security definer set search_path=public,sav_ai_crm as $
+) returns jsonb language plpgsql security definer set search_path=public,sav_ai_crm as $$
 declare me sav_ai_crm.members; d sav_ai_crm.sales_email_drafts; updated_tasks int:=0;
 begin
   me:=sav_ai_crm.agent_current_member();
@@ -325,7 +325,7 @@ begin
     'lead_status','contacted',
     'completed_tasks',updated_tasks
   );
-end $;
+end $$;
 
 revoke all on function public.sav_ai_crm_ingest_engagex_lead(jsonb) from public,anon,authenticated;
 grant execute on function public.sav_ai_crm_ingest_engagex_lead(jsonb) to service_role;

@@ -1,7 +1,8 @@
+import { withApiErrors } from "../../../lib/ai/api-errors";
 import { NextRequest } from "next/server";
 import { bearerPresent, jsonError, serverSupabase } from "../../../lib/ai/server-supabase";
 
-export async function GET(req:NextRequest){
+async function handleGET(req:NextRequest){
   if(!bearerPresent(req)) return jsonError("Authentication required",401,"UNAUTHORIZED");
   const supabase=serverSupabase(req);
   const [{data:agents,error},{data:metrics,error:metricError}] = await Promise.all([
@@ -13,7 +14,7 @@ export async function GET(req:NextRequest){
   return Response.json({agents:agents||[],metrics:metrics||{}});
 }
 
-export async function POST(req:NextRequest){
+async function handlePOST(req:NextRequest){
   if(!bearerPresent(req)) return jsonError("Authentication required",401,"UNAUTHORIZED");
   const body=await req.json().catch(()=>null) as null|{name?:string;slug?:string;role_name?:string;description?:string};
   if(!body?.name || !body.slug || !body.role_name) return jsonError("name, slug and role_name are required",422,"VALIDATION_ERROR");
@@ -24,3 +25,6 @@ export async function POST(req:NextRequest){
   if(error) return jsonError(error.message,403,"AGENT_CREATE_FAILED");
   return Response.json({id:data},{status:201});
 }
+
+export const GET=withApiErrors(handleGET);
+export const POST=withApiErrors(handlePOST);

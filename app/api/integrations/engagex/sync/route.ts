@@ -1,3 +1,4 @@
+import { withApiErrors } from "../../../../../lib/ai/api-errors";
 import { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { bearerPresent,jsonError,serverAdminSupabase,serverSupabase } from "../../../../../lib/ai/server-supabase";
@@ -9,14 +10,14 @@ function obj(value:unknown):Record<string,unknown>{
   return value&&typeof value==="object"&&!Array.isArray(value)?value as Record<string,unknown>:{};
 }
 
-export async function POST(req:NextRequest){
+async function handlePOST(req:NextRequest){
   if(!bearerPresent(req)) return jsonError("Authentication required",401,"UNAUTHORIZED");
 
   const crm=serverSupabase(req);
   const {data:workspace,error:workspaceError}=await crm.rpc("sav_ai_crm_workspace");
   if(workspaceError) return jsonError("CRM workspace could not be verified.",403,"WORKSPACE_ACCESS_DENIED");
   const role=textValue(obj(workspace).role,32);
-  if(!role||role==="viewer") return jsonError("CRM write permission required.",403,"WORKSPACE_ACCESS_DENIED");
+  if(!["owner","admin","manager"].includes(role)||obj(workspace).slug!=="savrdh-technology-main") return jsonError("CRM write permission required.",403,"WORKSPACE_ACCESS_DENIED");
 
   const engagexUrl=(process.env.ENGAGEX_PROJECT_URL||"").trim();
   const engagexKey=(process.env.ENGAGEX_SERVICE_ROLE_KEY||"").trim();
@@ -91,5 +92,7 @@ export async function POST(req:NextRequest){
     }else synced++;
   }
 
-  return Response.json({ok:failed===0,found:payloads.length,synced,failed});
+  return Response.json({ok:failed===0,found:payloads.length,synced,failed,message:failed?`${synced} leads synchronized; ${failed} failed. Review integration logs before retrying.`:undefined},{status:failed?207:200});
 }
+
+export const POST=withApiErrors(handlePOST);

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getAIProvider } from "./provider";
+import { deterministicPlan } from "./deterministic";
 import { CRMToolbox, type AgentToolResult } from "./crm-agent-tools";
 
 export type SalesDecision={
@@ -110,7 +111,8 @@ export async function analyzeSalesLead(input:{
     return {ok:false,error:"PRODUCT_CATALOG_READ_FAILED",message:catalogError.message} as const;
   }
   const products=Array.isArray(catalog)?catalog:[];
-  const provider=await getAIProvider().planAction({
+  const explicit=/^(?:create (?:a )?(?:task|follow[ -]?up)|update (?:lead )?status)\s*:/i.test(input.command.trim());
+  let provider=explicit?{ok:true as const,data:deterministicPlan(input.command,{lead:leadResult.data}),provider:"deterministic"}:await getAIProvider().planAction({
     command:input.command,
     context:{
       lead:leadResult.data,
@@ -128,25 +130,14 @@ export async function analyzeSalesLead(input:{
       }
     }
   });
-  if(!provider.ok) return provider;
+  const diagnostic=provider.ok?null:provider.diagnostic;
+  if(!provider.ok){
+    provider={ok:true,data:deterministicPlan(input.command,{lead:leadResult.data}),provider:"deterministic"};
+  }
 
   const decision=normalizeSalesDecision(input.leadId,provider.data);
   if(decision.recommended_product && !products.some((p)=>stringValue(object(p).name,160)===decision.recommended_product)){
     decision.recommended_product=null;
-  }
-  const selectedProduct=decision.recommended_product
-    ? products.find((p)=>stringValue(object(p).name,160)===decision.recommended_product)
-    : null;
-  const selectedProductId=selectedProduct?stringValue(object(selectedProduct).id,64):"";
-  const analysisSave=await input.supabase.rpc("sav_ai_crm_save_lead_ai_analysis",{
-    p_lead_id:input.leadId,
-    p_qualification:decision.qualification,
-    p_confidence:decision.confidence,
-    p_reasoning:decision.summary,
-    p_product_id:selectedProductId||null
-  });
-  if(analysisSave.error){
-    return {ok:false,error:"AI_ANALYSIS_SAVE_FAILED",message:analysisSave.error.message} as const;
   }
   const result:AgentEngineResult={
     decision,
@@ -154,7 +145,7 @@ export async function analyzeSalesLead(input:{
     approval_required:false,
     errors:[]
   };
-  return {ok:true,data:result,provider:provider.provider} as const;
+  return {ok:true,data:result,provider:provider.provider,diagnostic} as const;
 }
 
 export async function executeSalesDecision(input:{

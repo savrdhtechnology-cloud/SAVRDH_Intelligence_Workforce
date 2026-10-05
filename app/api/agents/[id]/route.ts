@@ -1,7 +1,8 @@
+import { withApiErrors } from "../../../../lib/ai/api-errors";
 import { NextRequest } from "next/server";
 import { bearerPresent, jsonError, serverSupabase } from "../../../../lib/ai/server-supabase";
 
-export async function GET(req:NextRequest,{params}:{params:Promise<{id:string}>}){
+async function handleGET(req:NextRequest,{params}:{params:Promise<{id:string}>}){
   if(!bearerPresent(req)) return jsonError("Authentication required",401,"UNAUTHORIZED");
   const {id}=await params;
   const {data,error}=await serverSupabase(req).rpc("sav_ai_crm_agent_detail",{p_agent_id:id});
@@ -9,7 +10,7 @@ export async function GET(req:NextRequest,{params}:{params:Promise<{id:string}>}
   return Response.json(data);
 }
 
-export async function PATCH(req:NextRequest,{params}:{params:Promise<{id:string}>}){
+async function handlePATCH(req:NextRequest,{params}:{params:Promise<{id:string}>}){
   if(!bearerPresent(req)) return jsonError("Authentication required",401,"UNAUTHORIZED");
   const {id}=await params;
   const body=await req.json().catch(()=>null) as null|{
@@ -25,3 +26,6 @@ export async function PATCH(req:NextRequest,{params}:{params:Promise<{id:string}
   if(error) return jsonError(error.message,403,"AGENT_UPDATE_FAILED");
   return Response.json({ok:true});
 }
+
+export const GET=withApiErrors(handleGET);
+export const PATCH=withApiErrors(handlePATCH);

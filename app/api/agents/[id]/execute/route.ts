@@ -1,6 +1,6 @@
+import { withApiErrors } from "../../../../../lib/ai/api-errors";
 import { NextRequest } from "next/server";
 import { analyzeSalesLead,executeSalesDecision } from "../../../../../lib/ai/agent-engine";
-import { getAIProvider } from "../../../../../lib/ai/provider";
 import { bearerPresent,jsonError,serverSupabase,supabaseConfigured } from "../../../../../lib/ai/server-supabase";
 
 function isDatabaseNotReady(error:{code?:string|null;message?:string|null}|null|undefined){
@@ -20,7 +20,7 @@ function object(value:unknown):Record<string,unknown>{
  return value&&typeof value==="object"&&!Array.isArray(value)?value as Record<string,unknown>:{};
 }
 
-export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>}){
+async function handlePOST(req:NextRequest,{params}:{params:Promise<{id:string}>}){
  if(!bearerPresent(req)) return jsonError("Authentication required",401,"UNAUTHORIZED");
  if(!supabaseConfigured()) return jsonError("Supabase environment is not configured.",503,"DATABASE_NOT_READY");
 
@@ -39,7 +39,7 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
  const leadId=typeof context.lead_id==="string"?context.lead_id:"";
  if(!leadId) return jsonError("A CRM lead must be selected",422,"VALIDATION_ERROR");
  if(mode==="analyze"&&!body.command?.trim()) return jsonError("command is required",422,"VALIDATION_ERROR");
- if(mode==="execute"&&!body.decision) return jsonError("Analyzed decision is required before execution",422,"VALIDATION_ERROR");
+ if(mode==="execute"&&!body.source_execution_id) return jsonError("A stored analyzed decision is required before execution",422,"VALIDATION_ERROR");
 
  const supabase=serverSupabase(req);
  const {data:agentDetail,error:agentError}=await supabase.rpc("sav_ai_crm_agent_detail",{p_agent_id:id});
@@ -78,21 +78,24 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
    source_execution_id:body.source_execution_id||null
  };
 
- const {data:executionId,error:createError}=await supabase.rpc("sav_ai_crm_create_agent_execution",{
-   p_agent_id:id,p_command:executionCommand,p_input:executionInput
- });
+ const created=mode==="execute"
+   ? await supabase.rpc("sav_ai_crm_claim_agent_plan",{p_source_id:body.source_execution_id,p_agent_id:id,p_lead_id:leadId})
+   : await supabase.rpc("sav_ai_crm_create_agent_execution",{p_agent_id:id,p_command:executionCommand,p_input:executionInput});
+ const createError=created.error;
+ const executionId=mode==="execute"?object(created.data).execution_id:created.data;
+ const storedDecision=mode==="execute"?object(created.data).decision:null;
  if(createError){
    if(isDatabaseNotReady(createError)) return databaseNotReady(createError.message);
    return jsonError(createError.message,403,"EXECUTION_CREATE_FAILED");
  }
 
- if(agentSlug==="sav-sales"){
+ {
    const engineResult=mode==="analyze"
      ? await analyzeSalesLead({
          supabase,agentId:id,leadId,command:body.command!.trim()
        })
      : await executeSalesDecision({
-         supabase,agentId:id,leadId,decision:body.decision
+         supabase,agentId:id,leadId,decision:storedDecision
        });
 
    if(!engineResult.ok){
@@ -112,11 +115,16 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
      },{status:503});
    }
 
+   if(engineResult.data.errors.length){
+     const {error}=await supabase.rpc("sav_ai_crm_fail_agent_execution",{p_execution_id:executionId,p_error:"ACTION_EXECUTION_FAILED",p_output:{result:engineResult.data}});
+     if(error)return jsonError("Action result could not be persisted. Review activity before retrying.",500,"EXECUTION_STATE_PERSIST_FAILED");
+     return Response.json({execution_id:executionId,mode,status:"failed",error:"ACTION_EXECUTION_FAILED",message:engineResult.data.errors.join(" "),result:engineResult.data},{status:409});
+   }
    const approvalStatus=engineResult.data.approval_required?"pending":"not_required";
    const {error:completeError}=await supabase.rpc("sav_ai_crm_complete_agent_execution",{
      p_execution_id:executionId,
      p_planned_action:{mode,decision:engineResult.data.decision},
-     p_output:{result:engineResult.data,provider:engineResult.provider},
+     p_output:{result:engineResult.data,provider:engineResult.provider,diagnostic:"diagnostic" in engineResult?engineResult.diagnostic:null},
      p_approval_status:approvalStatus
    });
    if(completeError){
@@ -127,50 +135,12 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
    return Response.json({
      execution_id:executionId,
      mode,
-     status:"completed",
+     status:engineResult.data.approval_required?"waiting_approval":"completed",
      provider:engineResult.provider,
      result:engineResult.data
    });
  }
 
- // Preserve the existing provider behavior for non-SAV-Sales agents.
- if(mode==="execute"){
-   const {error:failError}=await supabase.rpc("sav_ai_crm_fail_agent_execution",{
-     p_execution_id:executionId,p_error:"EXECUTE_MODE_NOT_IMPLEMENTED",
-     p_output:{message:"Controlled execute mode is currently enabled only for SAV-Sales."}
-   });
-   if(failError) return jsonError(failError.message,500,"EXECUTION_STATE_PERSIST_FAILED");
-   return jsonError("Controlled execute mode is currently enabled only for SAV-Sales.",409,"EXECUTE_MODE_NOT_IMPLEMENTED");
- }
-
- const providerContext={...context};
- const {data:leadRows,error:leadError}=await supabase.rpc("sav_ai_crm_list_leads",{p_status:null,p_search:null});
- if(leadError){
-   if(isDatabaseNotReady(leadError)) return databaseNotReady(leadError.message);
-   return jsonError(leadError.message,500,"LEAD_CONTEXT_LOAD_FAILED");
- }
- const lead=Array.isArray(leadRows)?leadRows.find((item:unknown)=>object(item).id===leadId):null;
- if(lead) providerContext.lead=lead;
-
- const result=await getAIProvider().planAction({command:body.command!.trim(),context:providerContext});
- if(!result.ok){
-   const {error:failError}=await supabase.rpc("sav_ai_crm_fail_agent_execution",{
-     p_execution_id:executionId,p_error:result.error,
-     p_output:{message:result.message,diagnostic:result.diagnostic}
-   });
-   if(failError&&isDatabaseNotReady(failError)) return databaseNotReady(failError.message);
-   if(failError) return jsonError(failError.message,500,"EXECUTION_STATE_PERSIST_FAILED");
-   return Response.json({
-     execution_id:executionId,error:result.error,message:result.message,diagnostic:result.diagnostic
-   },{status:503});
- }
-
- const {error:completeError}=await supabase.rpc("sav_ai_crm_complete_agent_execution",{
-   p_execution_id:executionId,p_planned_action:result.data,p_output:{plan:result.data},p_approval_status:"not_required"
- });
- if(completeError){
-   if(isDatabaseNotReady(completeError)) return databaseNotReady(completeError.message);
-   return jsonError(completeError.message,500,"EXECUTION_COMPLETE_FAILED");
- }
- return Response.json({execution_id:executionId,plan:result.data,status:"completed",provider:result.provider});
 }
+
+export const POST=withApiErrors(handlePOST);

@@ -38,7 +38,7 @@ export class CRMToolbox{
   ){}
 
   private async logTool(result:AgentToolResult,targetType:string|null,targetId:string|null){
-    await this.supabase.rpc("sav_ai_crm_log_agent_tool",{
+    const {error}=await this.supabase.rpc("sav_ai_crm_log_agent_tool",{
       p_agent_id:this.agentId,
       p_tool:result.tool,
       p_success:result.ok,
@@ -51,6 +51,7 @@ export class CRMToolbox{
         approval_required:result.approval_required===true
       }
     });
+    if(error)return {...result,ok:false,error:"Operation result could not be audited. Refresh its record before retrying."};
     return result;
   }
 
@@ -82,12 +83,11 @@ export class CRMToolbox{
     if(!/^[0-9a-f-]{36}$/i.test(leadId)){
       return this.logTool({tool:"getLead",ok:false,error:"Invalid lead ID"},"lead",null);
     }
-    const {data,error}=await this.supabase.rpc("sav_ai_crm_list_leads",{p_status:null,p_search:null});
-    if(error) return this.logTool({tool:"getLead",ok:false,error:error.message},"lead",leadId);
-    const rows=Array.isArray(data)?data:[];
-    const lead=rows.find((row)=>asObject(row).id===leadId);
-    if(!lead) return this.logTool({tool:"getLead",ok:false,error:"Lead not found in workspace"},"lead",leadId);
-    return this.logTool({tool:"getLead",ok:true,data:lead},"lead",leadId);
+    const {data,error}=await this.supabase.rpc("sav_ai_crm_lead_sales_detail",{p_lead_id:leadId});
+    if(error)return {tool:"getLead",ok:false,error:error.message};
+    const lead=asObject(data).lead;
+    if(!lead)return {tool:"getLead",ok:false,error:"Lead not found in workspace"};
+    return {tool:"getLead",ok:true,data:lead};
   }
 
   private async requestAndExecute(

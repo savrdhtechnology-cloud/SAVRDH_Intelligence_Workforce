@@ -1,3 +1,4 @@
+import { crmFetch } from "../request";
 import { crmSupabase } from "../supabase-client";
 import { AgentCapability, AgentRecord } from "./agent-types";
 
@@ -21,9 +22,9 @@ export class AgentApiError extends Error{
 
 async function api<T>(url:string,init?:RequestInit):Promise<T>{
   const headers={...(await authHeaders()),...(init?.headers||{})};
-  const res=await fetch(url,{...init,headers});
+  const res=await crmFetch(url,{...init,headers});
   const body=await res.json().catch(()=>({})) as {message?:string;error?:string};
-  if(!res.ok) throw new AgentApiError(body.message||body.error||"Request failed",body.error||"AGENT_REQUEST_FAILED",res.status);
+  if(!res.ok) throw new AgentApiError(body.message||body.error||`Agent request could not complete (HTTP ${res.status}). Please refresh and retry.`,body.error||"AGENT_REQUEST_FAILED",res.status);
   return body as T;
 }
 

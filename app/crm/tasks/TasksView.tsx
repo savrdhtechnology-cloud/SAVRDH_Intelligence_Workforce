@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Archive,
+  Pause,  Archive,
   Bell,
   Bot,
   CalendarClock,
@@ -96,7 +96,6 @@ export default function TasksView({ onChanged }: Props) {
 
   useEffect(() => {
     refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function applyFilters(next: TaskFilters) {
@@ -248,6 +247,7 @@ export default function TasksView({ onChanged }: Props) {
   }
 
   async function runAiTask(task: TaskRecord) {
+    if(runningTaskId)return;
     if (task.assignee_type !== "ai" || !task.assigned_agent_id) {
       setError("This task is not assigned to an AI agent.");
       return;
@@ -262,14 +262,15 @@ export default function TasksView({ onChanged }: Props) {
     setRunMessage("");
     try {
       const result = await runTaskWorkflow(task.id);
-      const workflowStatus = result?.result?.status || "completed";
+      const workflowStatus = result?.result?.status;
+      if(!workflowStatus)throw new Error("Workflow response did not confirm execution. Refresh its history before retrying.");
       const workType = result?.work_type || task.followup_type || task.task_type;
       setRunMessage(
         workflowStatus === "waiting_approval"
           ? `${workType} workflow started and is waiting for approval.`
           : workflowStatus === "waiting"
             ? `${workType} workflow started and is waiting for its next scheduled step.`
-            : `${workType} workflow executed successfully.`
+            : `${workType} workflow status: ${workflowStatus}.`
       );
       await refresh();
       if (detail?.task.id === task.id) setDetail(await getTaskDetail(task.id));

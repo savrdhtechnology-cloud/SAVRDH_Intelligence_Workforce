@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { deterministicPlan, deterministicSalesEmail } from "./deterministic";
 
 export type AIProviderDiagnostic={
   provider:string;
@@ -45,7 +46,7 @@ function parseJsonObject(text:string):Record<string,unknown>{
 
 class UnconfiguredProvider implements AIProvider {
   private result<T>():AIProviderResult<T>{
-    const message="OpenAI provider configuration requires AI_PROVIDER=openai, AI_API_KEY, and AI_MODEL in the server environment.";
+    const message="AI provider unavailable. This reasoning feature requires a configured provider. Deterministic CRM operations remain available.";
     return {
       ok:false,error:"AI_PROVIDER_NOT_CONFIGURED",message,
       diagnostic:{provider:OPENAI_PROVIDER,model:process.env.AI_MODEL?.trim()||null,http_status:null,code:"AI_PROVIDER_NOT_CONFIGURED",type:"configuration_error",request_id:null,message}
@@ -55,15 +56,15 @@ class UnconfiguredProvider implements AIProvider {
   classifyIntent(){ return Promise.resolve(this.result<{intent:string;confidence:number}>()); }
   extractLeadData(){ return Promise.resolve(this.result<Record<string,unknown>>()); }
   summarizeConversation(){ return Promise.resolve(this.result<{summary:string}>()); }
-  planAction(){ return Promise.resolve(this.result<{action:string;payload:Record<string,unknown>;confidence:number}>()); }
-  generateSalesEmail(){ return Promise.resolve(this.result<{subject:string;body:string;personalization_summary:string;confidence:number}>()); }
+  planAction(_input?:{command:string;context?:Record<string,unknown>}){ return Promise.resolve(this.result<{action:string;payload:Record<string,unknown>;confidence:number}>()); }
+  generateSalesEmail(_input?:{lead:Record<string,unknown>;product:Record<string,unknown>;qualification:string;need:string}){ return Promise.resolve(this.result<{subject:string;body:string;personalization_summary:string;confidence:number}>()); }
   evaluateConfidence(){ return Promise.resolve(this.result<{confidence:number}>()); }
 }
 
 class AdapterUnavailableProvider extends UnconfiguredProvider {
   constructor(private readonly configuredProvider:string){ super(); }
   private unavailable<T>():AIProviderResult<T>{
-    const message=`Unsupported AI_PROVIDER "${this.configuredProvider}". This build supports AI_PROVIDER=openai.`;
+    const message=`Unsupported AI_PROVIDER "${this.configuredProvider}". Supported modes: openai, deterministic, disabled.`;
     return {
       ok:false,error:"AI_PROVIDER_ERROR",message,
       diagnostic:{provider:this.configuredProvider,model:process.env.AI_MODEL?.trim()||null,http_status:null,code:"UNSUPPORTED_PROVIDER",type:"configuration_error",request_id:null,message}
@@ -73,8 +74,8 @@ class AdapterUnavailableProvider extends UnconfiguredProvider {
   classifyIntent(){ return Promise.resolve(this.unavailable<{intent:string;confidence:number}>()); }
   extractLeadData(){ return Promise.resolve(this.unavailable<Record<string,unknown>>()); }
   summarizeConversation(){ return Promise.resolve(this.unavailable<{summary:string}>()); }
-  planAction(){ return Promise.resolve(this.unavailable<{action:string;payload:Record<string,unknown>;confidence:number}>()); }
-  generateSalesEmail(){ return Promise.resolve(this.unavailable<{subject:string;body:string;personalization_summary:string;confidence:number}>()); }
+  planAction(_input?:{command:string;context?:Record<string,unknown>}){ return Promise.resolve(this.unavailable<{action:string;payload:Record<string,unknown>;confidence:number}>()); }
+  generateSalesEmail(_input?:{lead:Record<string,unknown>;product:Record<string,unknown>;qualification:string;need:string}){ return Promise.resolve(this.unavailable<{subject:string;body:string;personalization_summary:string;confidence:number}>()); }
   evaluateConfidence(){ return Promise.resolve(this.unavailable<{confidence:number}>()); }
 }
 
@@ -82,7 +83,7 @@ class OpenAIProvider implements AIProvider {
   private readonly client:OpenAI;
 
   constructor(private readonly apiKey:string,private readonly model:string){
-    this.client=new OpenAI({apiKey:this.apiKey});
+    this.client=new OpenAI({apiKey:this.apiKey,timeout:20000,maxRetries:0});
   }
 
   private error<T>(error:unknown):AIProviderResult<T>{
@@ -94,7 +95,7 @@ class OpenAIProvider implements AIProvider {
     const param=typeof value.param==="string"?value.param:(typeof nested.param==="string"?nested.param:null);
     const requestId=typeof value.request_id==="string"?value.request_id:(typeof value.requestID==="string"?value.requestID:null);
     const rawMessage=error instanceof Error?error.message:(typeof nested.message==="string"?nested.message:"OpenAI request failed");
-    const message=rawMessage.replace(/sk-[A-Za-z0-9_-]+/g,"[REDACTED]");
+    const message=rawMessage.split(this.apiKey).join("[REDACTED]").replace(/(?:sk-|Bearer )[A-Za-z0-9_.-]+/g,"[REDACTED]").slice(0,500);
     console.error("OpenAI Responses API error",{
       provider:OPENAI_PROVIDER,model:this.model,status,code,type,param,request_id:requestId,message
     });
@@ -348,12 +349,21 @@ class OpenAIProvider implements AIProvider {
   }
 }
 
+class DeterministicProvider extends UnconfiguredProvider {
+  async planAction(input:{command:string;context?:Record<string,unknown>}):Promise<AIProviderResult<{action:string;payload:Record<string,unknown>;confidence:number}>>{
+    return {ok:true,data:deterministicPlan(input.command,input.context),provider:"deterministic"};
+  }
+  async generateSalesEmail(input:{lead:Record<string,unknown>;product:Record<string,unknown>;qualification:string;need:string}):Promise<AIProviderResult<{subject:string;body:string;personalization_summary:string;confidence:number}>>{
+    return {ok:true,data:deterministicSalesEmail(input),provider:"deterministic"};
+  }
+}
+
 export function getAIProvider():AIProvider {
-  const provider=(process.env.AI_PROVIDER||"").trim().toLowerCase();
+  const provider=(process.env.AI_PROVIDER||"deterministic").trim().toLowerCase();
   const apiKey=(process.env.AI_API_KEY||"").trim();
   const model=(process.env.AI_MODEL||"").trim();
-
-  if(!provider||!apiKey||!model) return new UnconfiguredProvider();
+  if(provider==="deterministic"||provider==="disabled") return new DeterministicProvider();
   if(provider!==OPENAI_PROVIDER) return new AdapterUnavailableProvider(provider);
+  if(!apiKey||!model) return new DeterministicProvider();
   return new OpenAIProvider(apiKey,model);
 }
