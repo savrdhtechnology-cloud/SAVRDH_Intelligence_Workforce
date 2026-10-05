@@ -265,15 +265,21 @@ export default function TasksView({ onChanged }: Props) {
     setRunMessage("");
     try {
       const result = await runTaskWorkflow(task.id);
-      const workflowStatus = result?.result?.status || "completed";
-      const workType = result?.work_type || task.followup_type || task.task_type;
-      setRunMessage(
-        workflowStatus === "waiting_approval"
-          ? `${workType} workflow started and is waiting for approval.`
-          : workflowStatus === "waiting"
-            ? `${workType} workflow started and is waiting for its next scheduled step.`
-            : `${workType} workflow executed successfully.`
-      );
+      if (result?.executor === "engagex" && result?.action === "email_sent") {
+        setRunMessage(
+          `Email sent successfully.${result?.provider_message_id ? ` Provider ID: ${result.provider_message_id}` : ""}`
+        );
+      } else {
+        const workflowStatus = result?.result?.status || result?.status || "completed";
+        const workType = result?.work_type || task.followup_type || task.task_type;
+        setRunMessage(
+          workflowStatus === "waiting_approval"
+            ? `${workType} workflow started and is waiting for approval.`
+            : workflowStatus === "waiting"
+              ? `${workType} workflow started and is waiting for its next scheduled step.`
+              : `${workType} workflow executed successfully.`
+        );
+      }
       await refresh();
       if (detail?.task.id === task.id) setDetail(await getTaskDetail(task.id));
       await onChanged?.();
