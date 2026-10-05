@@ -1086,3 +1086,93 @@ radial-gradient(circle at 70% 70%,rgba(73,227,255,.15),transparent 26%),#071523}
   0%,100%{transform:scale(.9);opacity:.72}
   50%{transform:scale(1.18);opacity:1}
 }
+
+
+/* CRM unified process status language */
+.workflow-layout:has(.workflow-list>button.active .workflow-status.active) .workflow-detail{
+  border-color:#173754!important;
+  box-shadow:none!important;
+}
+.workflow-layout:has(.workflow-list>button.active .workflow-status.active) .workflow-detail-head{
+  background:transparent!important;
+  border-bottom-color:#173754!important;
+}
+
+.task-card.task-status-in_progress{
+  border-color:rgba(79,156,255,.46);
+  box-shadow:inset 3px 0 0 #4f9cff,0 0 20px rgba(79,156,255,.08);
+  animation:crmStatusBlue 2.2s ease-in-out infinite;
+}
+.task-card.task-status-pending{
+  border-color:rgba(233,184,93,.34);
+  box-shadow:inset 3px 0 0 #e9b85d;
+}
+.task-card.task-status-completed{
+  border-color:rgba(83,214,155,.34);
+  box-shadow:inset 3px 0 0 #53d69b;
+}
+.task-card.task-status-cancelled{
+  border-color:rgba(117,139,158,.28);
+  box-shadow:inset 3px 0 0 #667b8f;
+  opacity:.78;
+}
+@keyframes crmStatusBlue{
+  0%,100%{box-shadow:inset 3px 0 0 #4f9cff,0 0 10px rgba(79,156,255,.04)}
+  50%{box-shadow:inset 3px 0 0 #68aaff,0 0 26px rgba(79,156,255,.16)}
+}
+
+.task-card-actions{
+  flex-wrap:wrap!important;
+  row-gap:6px!important;
+}
+.task-card-actions .task-control-btn{
+  width:auto!important;
+  min-width:64px;
+  height:30px;
+  padding:0 9px!important;
+  display:inline-flex!important;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  white-space:nowrap;
+}
+.task-card-actions .task-control-pause{border-color:rgba(233,184,93,.42);color:#f0c675}
+.task-card-actions .task-control-resume{border-color:rgba(83,214,155,.42);color:#79e7bd}
+.task-card-actions .task-cancel-btn{border-color:rgba(255,111,134,.42)!important;color:#ff9aae!important}
+.task-card-actions .task-run-btn{min-width:92px!important}
+
+.agent-status,
+.workflow-status{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+}
+.agent-status::before,
+.workflow-status::before{
+  content:"";
+  width:6px;
+  height:6px;
+  border-radius:999px;
+  background:currentColor;
+  opacity:.75;
+}
+.agent-status.active::before,
+.workflow-status.active::before{
+  animation:crmStatusPulseGreen 1.8s ease-in-out infinite;
+  box-shadow:0 0 10px rgba(83,214,155,.55);
+}
+.agent-list>button:has(.agent-status.active){
+  border-left:2px solid rgba(83,214,155,.48);
+}
+.agent-list>button:has(.agent-status.paused){
+  border-left:2px solid rgba(233,184,93,.48);
+}
+.agent-list>button:has(.agent-status.disabled),
+.agent-list>button:has(.agent-status.error){
+  border-left:2px solid rgba(117,139,158,.42);
+}
+
+@keyframes crmStatusPulseGreen{
+  0%,100%{transform:scale(.88);opacity:.62}
+  50%{transform:scale(1.22);opacity:1}
+}
