@@ -312,12 +312,22 @@ function WorkflowCanvas({
     const id=requestAnimationFrame(()=>fitView());
     return ()=>cancelAnimationFrame(id);
   },[graph.nodes.length]);
-  function wheel(e:React.WheelEvent<HTMLDivElement>){
-    if(e.ctrlKey||e.metaKey){
+  useEffect(()=>{
+    const el=canvas.current;
+    if(!el) return;
+    const handleWheel=(e:WheelEvent)=>{
+      if(!(e.ctrlKey||e.metaKey)) return;
       e.preventDefault();
-      setZoom(z=>clampZoom(z+(e.deltaY<0?.08:-.08)));
-    }
-  }
+      e.stopPropagation();
+      setZoom(z=>{
+        const next=clampZoom(z+(e.deltaY<0?.08:-.08));
+        requestAnimationFrame(()=>centerAt(next));
+        return next;
+      });
+    };
+    el.addEventListener("wheel",handleWheel,{passive:false});
+    return ()=>el.removeEventListener("wheel",handleWheel);
+  },[graph.nodes, zoom]);
   function down(e:ReactPointerEvent<HTMLButtonElement>,node:WorkflowNode){
     const startX=e.clientX,startY=e.clientY,start=node.position;
     const move=(ev:PointerEvent)=>onMove(node.id,{
@@ -339,7 +349,6 @@ function WorkflowCanvas({
   return <motion.div
     className="workflow-canvas"
     ref={canvas}
-    onWheel={wheel}
     initial={{opacity:0,scale:.99}}
     animate={{opacity:1,scale:1}}
     transition={{duration:.32,ease:[.22,1,.36,1]}}
