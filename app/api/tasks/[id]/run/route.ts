@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { bearerPresent, jsonError, serverSupabase } from "../../../../../../lib/ai/server-supabase";
+import { bearerPresent, jsonError, serverSupabase } from "../../../../../lib/ai/server-supabase";
 
 function obj(value: unknown): Record<string, any> {
   return value && typeof value === "object" && !Array.isArray(value)
