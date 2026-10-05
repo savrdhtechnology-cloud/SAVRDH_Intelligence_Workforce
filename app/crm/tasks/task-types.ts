@@ -1,4 +1,4 @@
-export type TaskStatus = "pending" | "in_progress" | "completed" | "cancelled";
+export type TaskStatus = "pending" | "paused" | "in_progress" | "completed" | "cancelled";
 export type TaskPriority = "low" | "medium" | "high" | "urgent";
 export type TaskScope = "all" | "today" | "overdue" | "upcoming" | "completed";
 export type TaskAssigneeType = "human" | "ai";
