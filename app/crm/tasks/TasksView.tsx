@@ -265,9 +265,9 @@ export default function TasksView({ onChanged }: Props) {
     setRunMessage("");
     try {
       const result = await runTaskWorkflow(task.id);
-      if (result?.executor === "engagex" && result?.action === "email_sent") {
+      if ((result?.executor === "engagex" || result?.executor === "akbs") && ["email_sent","fee_reminder_sent"].includes(result?.action)) {
         setRunMessage(
-          `Email sent successfully.${result?.provider_message_id ? ` Provider ID: ${result.provider_message_id}` : ""}`
+          `${result?.action === "fee_reminder_sent" ? "Fee reminder email sent successfully." : "Email sent successfully."}${result?.provider_message_id ? ` Provider ID: ${result.provider_message_id}` : ""}`
         );
       } else {
         const workflowStatus = result?.result?.status || result?.status || "completed";
