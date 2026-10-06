@@ -33,13 +33,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return jsonError("Task is not assigned to an AI agent.", 409, "NO_AGENT");
     }
 
-    const { data: agent, error: agentError } = await db
-      .schema("sav_ai_crm")
-      .from("ai_agents")
-      .select("status")
-      .eq("id", task.assigned_agent_id)
-      .maybeSingle();
-    if (agentError || !agent) {
+    const { data: agentDetail, error: agentError } = await db.rpc("sav_ai_crm_agent_detail", {
+      p_agent_id: task.assigned_agent_id,
+    });
+    if (agentError) {
+      return jsonError(agentError.message, 409, "AGENT_READ_FAILED");
+    }
+    const agent = obj(obj(agentDetail).agent);
+    if (!agent.id) {
       return jsonError("Assigned AI agent was not found.", 409, "AGENT_NOT_FOUND");
     }
     if (agent.status !== "active") {
