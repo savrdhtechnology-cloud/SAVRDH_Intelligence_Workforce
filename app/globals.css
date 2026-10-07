@@ -583,3 +583,29 @@ footer{animation:footerFloat 6s ease-in-out infinite}
   .pulse-band{padding:0 14px}
   .pulse-band-track{overflow-x:auto;mask-image:none;-webkit-mask-image:none}
 }
+
+
+/* SAVRDH Intelligence Workforce demo booking */
+.wf-demo-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+.wf-demo-backdrop{position:absolute;inset:0;border:0;background:rgba(2,7,16,.84);backdrop-filter:blur(10px);cursor:pointer}
+.wf-demo-modal{position:relative;width:min(760px,96vw);max-height:92vh;overflow:auto;border:1px solid #22324d;border-radius:22px;background:linear-gradient(180deg,#0b1322 0%,#09111e 100%);box-shadow:0 28px 90px rgba(0,0,0,.55);padding:28px;color:#e7eefb}
+.wf-demo-close{position:absolute;top:16px;right:16px;width:38px;height:38px;border-radius:10px;border:1px solid #25344e;background:#0c1627;color:#9fb0c8;display:grid;place-items:center;cursor:pointer}
+.wf-demo-heading{display:flex;gap:14px;align-items:flex-start;padding-right:46px}
+.wf-demo-icon{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:#0b4f64;border:1px solid #0b7695;color:#53e6ff;flex:none}
+.wf-demo-kicker{font-size:11px;letter-spacing:.16em;font-weight:800;color:#22d3ee}
+.wf-demo-heading h2,.wf-demo-success h2{margin:6px 0 0;font-size:24px;line-height:1.25;color:white}
+.wf-demo-intro{margin:18px 0 22px;color:#91a2ba;font-size:14px;line-height:1.65}
+.wf-demo-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.wf-demo-grid label{display:flex;flex-direction:column;gap:8px;font-size:12px;font-weight:700;color:#c9d4e5}
+.wf-demo-grid input,.wf-demo-grid select,.wf-demo-grid textarea{width:100%;border:1px solid #263754;border-radius:11px;background:#101a2d;color:#edf4ff;padding:12px 13px;outline:none;font:inherit}
+.wf-demo-grid input:focus,.wf-demo-grid select:focus,.wf-demo-grid textarea:focus{border-color:#18c9ef;box-shadow:0 0 0 3px rgba(24,201,239,.08)}
+.wf-demo-span{grid-column:1/-1}
+.wf-demo-submit{margin-top:20px;width:100%;border:0;border-radius:12px;background:linear-gradient(90deg,#0ea5e9,#4f46e5);color:#fff;padding:14px 18px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer}
+.wf-demo-submit:disabled{opacity:.6;cursor:not-allowed}
+.wf-demo-error{margin-top:15px;border:1px solid rgba(248,113,113,.32);background:rgba(127,29,29,.22);color:#fecaca;padding:11px 13px;border-radius:10px;font-size:12px}
+.wf-demo-consent{margin:12px 4px 0;color:#71839d;font-size:10px;line-height:1.5;text-align:center}
+.wf-demo-success{text-align:center;padding:24px 10px}
+.wf-demo-success-icon{width:62px;height:62px;border-radius:18px;margin:0 auto 16px;display:grid;place-items:center;background:rgba(16,185,129,.12);border:1px solid rgba(52,211,153,.35);color:#34d399}
+.wf-demo-success p{color:#9fb0c8;line-height:1.65}
+.wf-demo-ref{margin-top:18px;padding:12px;border-radius:10px;background:#101a2d;border:1px solid #263754;color:#aebcd0;font-size:12px}
+@media(max-width:640px){.wf-demo-modal{padding:22px 18px}.wf-demo-grid{grid-template-columns:1fr}.wf-demo-span{grid-column:auto}.wf-demo-heading h2,.wf-demo-success h2{font-size:20px}}
