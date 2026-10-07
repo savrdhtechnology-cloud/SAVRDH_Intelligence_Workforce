@@ -32,6 +32,7 @@ import InteractiveHero from "./interactive-hero";
 import InteractiveWorkflow from "./interactive-workflow";
 import InteractiveEcosystem from "./interactive-ecosystem";
 import AgentsShowcase from "./agents-showcase";
+import { WorkforceDemoModal, openWorkforceDemo } from "./workforce-demo-modal";
 
 const agents = [
   {
@@ -320,9 +321,9 @@ export default function Home() {
           <a href="#security">Security</a>
           <a href="/savrdhintelligenceworkforce/crm">Workspace Login</a>
         </nav>
-        <motion.a className="header-cta" href="#contact" whileHover={{ y: -2, scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+        <motion.button className="header-cta" type="button" onClick={openWorkforceDemo} whileHover={{ y: -2, scale: 1.03 }} whileTap={{ scale: 0.97 }}>
           Request Demo <ArrowRight size={15} />
-        </motion.a>
+        </motion.button>
       </motion.header>
 
       <InteractiveHero />
@@ -413,9 +414,9 @@ export default function Home() {
         <motion.h2 variants={fadeUp}>Put intelligent execution to work across your business.</motion.h2>
         <motion.p variants={fadeUp}>AI agents that communicate, coordinate and execute — while your team stays in control.</motion.p>
         <motion.div className="hero-actions cta-actions" variants={fadeUp}>
-          <motion.a className="primary-btn" href="mailto:info@savrdhtechnologies.com" whileHover={{ y: -3, scale: 1.03 }}>
+          <motion.button className="primary-btn" type="button" onClick={openWorkforceDemo} whileHover={{ y: -3, scale: 1.03 }}>
             Request a Live Demo <ArrowRight size={18} />
-          </motion.a>
+          </motion.button>
           <motion.a className="ghost-btn" href="https://savrdhtechnologies.com" whileHover={{ y: -3, scale: 1.02 }}>
             Visit Savrdh Technology
           </motion.a>
@@ -430,6 +431,7 @@ export default function Home() {
           <a href="mailto:info@savrdhtechnologies.com">Contact</a>
         </div>
       </motion.footer>
+          <WorkforceDemoModal />
     </main>
   );
 }
