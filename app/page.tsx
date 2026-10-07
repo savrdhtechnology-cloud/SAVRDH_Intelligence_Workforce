@@ -318,7 +318,7 @@ export default function Home() {
           <a href="#agents">AI Agents</a>
           <a href="#integrations">Integrations</a>
           <a href="#security">Security</a>
-          <a href="/crm">CRM Login</a>
+          <a href="/savrdhintelligenceworkforce/crm">Workspace Login</a>
         </nav>
         <motion.a className="header-cta" href="#contact" whileHover={{ y: -2, scale: 1.03 }} whileTap={{ scale: 0.97 }}>
           Request Demo <ArrowRight size={15} />
@@ -413,10 +413,10 @@ export default function Home() {
         <motion.h2 variants={fadeUp}>Put intelligent execution to work across your business.</motion.h2>
         <motion.p variants={fadeUp}>AI agents that communicate, coordinate and execute — while your team stays in control.</motion.p>
         <motion.div className="hero-actions cta-actions" variants={fadeUp}>
-          <motion.a className="primary-btn" href="mailto:info@savrdhtechnology.com" whileHover={{ y: -3, scale: 1.03 }}>
+          <motion.a className="primary-btn" href="mailto:info@savrdhtechnologies.com" whileHover={{ y: -3, scale: 1.03 }}>
             Request a Live Demo <ArrowRight size={18} />
           </motion.a>
-          <motion.a className="ghost-btn" href="https://www.savrdhtechnology.com" whileHover={{ y: -3, scale: 1.02 }}>
+          <motion.a className="ghost-btn" href="https://savrdhtechnologies.com" whileHover={{ y: -3, scale: 1.02 }}>
             Visit Savrdh Technology
           </motion.a>
         </motion.div>
@@ -426,8 +426,8 @@ export default function Home() {
         <div className="footer-brand"><BrandMark /><span>SAVRDH Intelligence Workforce</span></div>
         <p>© 2026 Savrdh Technology. All rights reserved.</p>
         <div className="footer-links">
-          <a href="https://www.savrdhtechnology.com">savrdhtechnology.com</a>
-          <a href="mailto:info@savrdhtechnology.com">Contact</a>
+          <a href="https://savrdhtechnologies.com">savrdhtechnologies.com</a>
+          <a href="mailto:info@savrdhtechnologies.com">Contact</a>
         </div>
       </motion.footer>
     </main>
