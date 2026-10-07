@@ -23,7 +23,6 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
-import { openWorkforceDemo } from "./workforce-demo-modal";
 
 const slides = [
   {
@@ -190,9 +189,9 @@ export default function InteractiveHero() {
         </div>
 
         <div className="hero-actions">
-          <motion.button type="button" onClick={openWorkforceDemo} className="primary-btn" whileHover={{ y: -3, scale: 1.03 }}>
+          <motion.a href="https://savrdhtechnologies.com/request-demo?product=intelligence-workforce" className="primary-btn" whileHover={{ y: -3, scale: 1.03 }}>
             See SAV in Action <ArrowRight size={18} />
-          </motion.button>
+          </motion.a>
           <motion.a href="#workflow" className="ghost-btn" whileHover={{ y: -3, scale: 1.02 }}>
             <Play size={16} fill="currentColor" /> Explore Platform
           </motion.a>
