@@ -73,7 +73,6 @@ const statuses = ["new", "contacted", "qualified", "proposal", "negotiation", "w
 export default function CRMPage() {
   const [sessionReady, setSessionReady] = useState(false);
   const [userEmail, setUserEmail] = useState("");
-  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [authMessage, setAuthMessage] = useState("");
   const [view, setView] = useState<View>("dashboard");
   const [workspace, setWorkspace] = useState<any>(null);
@@ -192,13 +191,10 @@ export default function CRMPage() {
       return;
     }
     setLoading(true);
-    const result = authMode === "login"
-      ? await crmSupabase.auth.signInWithPassword({ email, password })
-      : await crmSupabase.auth.signUp({ email, password });
+    const result = await crmSupabase.auth.signInWithPassword({ email, password });
 
     setLoading(false);
-    if (result.error) setAuthMessage(result.error.message);
-    else if (authMode === "signup" && !result.data.session) setAuthMessage("Account created. Check your email if confirmation is enabled.");
+    if (result.error) setAuthMessage("Invalid email or password, or this account does not have workspace access.");
   }
 
   async function createLead(e: FormEvent<HTMLFormElement>) {
@@ -269,14 +265,11 @@ export default function CRMPage() {
 
         <section className="crm-auth-panel">
           <motion.form className="crm-auth-card" onSubmit={handleAuth} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}>
-            <h2>{authMode === "login" ? "Sign in to CRM" : "Create CRM account"}</h2>
-            <p>Secure access to your SAV AI workspace.</p>
+            <h2>Sign in to AI Workspace</h2>
+            <p>Authorized access only. Use the login credentials provided by Savrdh Technology.</p>
             <label>Email<input name="email" type="email" autoComplete="email" required /></label>
-            <label>Password<input name="password" type="password" minLength={6} autoComplete={authMode === "login" ? "current-password" : "new-password"} required /></label>
-            <button disabled={loading}>{loading ? "Please wait..." : authMode === "login" ? "Sign In" : "Create Account"}</button>
-            <button type="button" className="secondary" onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}>
-              {authMode === "login" ? "Create new workspace account" : "Back to sign in"}
-            </button>
+            <label>Password<input name="password" type="password" minLength={6} autoComplete="current-password" required /></label>
+            <button disabled={loading}>{loading ? "Please wait..." : "Sign In"}</button>
             {authMessage && <div className="crm-auth-msg">{authMessage}</div>}
           </motion.form>
         </section>
