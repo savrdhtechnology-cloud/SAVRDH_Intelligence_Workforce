@@ -46,6 +46,13 @@ export default function WorkflowsModule({focusedId}:{focusedId?:string}){
   const [nodeSearch,setNodeSearch]=useState("");
   const [studioTab,setStudioTab]=useState<"test"|"executions">("test");
   const [testBusy,setTestBusy]=useState(false);
+  const [fixture,setFixture]=useState("custom");
+  const fixtures:Record<string,string>={
+    lead:JSON.stringify({lead:{id:"TEST-LEAD-001",source:"website",status:"new",priority:"medium"}},null,2),
+    followup:JSON.stringify({lead:{id:"TEST-LEAD-001",status:"contacted"},task:{id:"TEST-TASK-001",status:"due",type:"follow_up"}},null,2),
+    reply:JSON.stringify({conversation:{id:"TEST-CONV-001",channel:"chat"},message:{text:"Please share more details",direction:"inbound"}},null,2),
+    fee:JSON.stringify({lead:{id:"TEST-LEAD-001",status:"fee_pending"},payment:{status:"pending",amount:2999}},null,2),
+  };
   const [nodeLogs,setNodeLogs]=useState(false);
 
   async function refresh(preferred?:string){
@@ -261,7 +268,8 @@ export default function WorkflowsModule({focusedId}:{focusedId?:string}){
           </div>
           {studioTab==="test"&&<div className="workflow-test-panel">
             <div className="agent-console-head"><TestTube2 size={15}/><div><b>TEST WORKFLOW</b><span>Plan first. Execution requires explicit confirmation.</span></div></div>
-            <textarea value={testContext} onChange={e=>setTestContext(e.target.value)}/>
+            <label className="studio-fixture-label">Test scenario <select value={fixture} onChange={e=>{const v=e.target.value;setFixture(v);if(fixtures[v])setTestContext(fixtures[v]);}}><option value="custom">Custom JSON</option><option value="lead">New lead</option><option value="followup">Follow-up due</option><option value="reply">Customer reply</option><option value="fee">Fee pending</option></select></label>
+            <textarea aria-label="Workflow test context JSON" value={testContext} onChange={e=>{setTestContext(e.target.value);setFixture("custom");}}/>
             <div><button disabled={testBusy} onClick={runTest}><TestTube2 size={12}/>{testBusy?"Testing...":"Plan Test (No Send)"}</button><button className="primary" onClick={execute}><Zap size={12}/>Execute Confirmed</button></div>
             {testResult&&<><div role="status" style={{marginTop:8,fontSize:12,color:"#99e3cd"}}>Server test response (not a live delivery confirmation)</div><pre>{JSON.stringify(testResult,null,2)}</pre></>}
           </div>}
