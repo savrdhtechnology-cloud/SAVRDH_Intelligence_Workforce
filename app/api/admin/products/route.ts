@@ -1,5 +1,5 @@
 import {NextRequest} from "next/server";
-import {adminContext,workspaceAllowed,apiFailure} from "../../_admin-context";
+import {adminContext,workspaceAllowed,apiFailure} from "../_admin-context";
 import {jsonError} from "../../../../lib/ai/server-supabase";
 export async function GET(req:NextRequest){
  const c=await adminContext(req);if("error" in c)return c.error;
