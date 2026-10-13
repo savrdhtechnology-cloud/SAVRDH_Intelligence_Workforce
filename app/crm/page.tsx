@@ -71,6 +71,7 @@ const operationNav:{id:View;label:string;icon:typeof LayoutDashboard}[]=[
   {id:"inbox",label:"Inbox",icon:Inbox}
 ];
 const studioLinks=[
+  {href:"/admin",label:"AI Workforce Admin",icon:Settings},
   {href:"/crm/workforce",label:"Agent Assignments",icon:BriefcaseBusiness},
   {href:"/crm/agents",label:"AI Agent Factory",icon:Bot},
   {href:"/crm/agent-studio",label:"Visual Agent Studio",icon:Workflow},
