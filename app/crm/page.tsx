@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -56,16 +57,25 @@ type Lead = {
 };
 
 const nav: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "leads", label: "Leads", icon: Users },
-  { id: "pipeline", label: "Pipeline", icon: GitBranch },
-  { id: "agents", label: "AI Agents", icon: Bot },
-  { id: "workflows", label: "Workflows", icon: Workflow },
-  { id: "inbox", label: "Inbox", icon: Inbox },
-  { id: "notifications", label: "Notifications", icon: Bell },
-  { id: "tasks", label: "Tasks", icon: ListTodo },
-  { id: "integrations", label: "Integrations", icon: Network },
-  { id: "settings", label: "Settings", icon: Settings },
+  { id:"dashboard",label:"AI OS Overview",icon:LayoutDashboard },
+  { id:"agents",label:"Agent Library",icon:Bot },
+  { id:"workflows",label:"Workflow Engine",icon:Workflow },
+  { id:"tasks",label:"Task Management",icon:ListTodo },
+  { id:"integrations",label:"Integrations",icon:Network },
+  { id:"notifications",label:"Notifications",icon:Bell },
+  { id:"settings",label:"Settings",icon:Settings }
+];
+const operationNav:{id:View;label:string;icon:typeof LayoutDashboard}[]=[
+  {id:"leads",label:"Leads",icon:Users},
+  {id:"pipeline",label:"Pipeline",icon:GitBranch},
+  {id:"inbox",label:"Inbox",icon:Inbox}
+];
+const studioLinks=[
+  {href:"/crm/workforce",label:"Agent Assignments",icon:BriefcaseBusiness},
+  {href:"/crm/agents",label:"AI Agent Factory",icon:Bot},
+  {href:"/crm/agent-studio",label:"Visual Agent Studio",icon:Workflow},
+  {href:"/crm/agent-studio/debug",label:"Execution Debugger",icon:Activity},
+  {href:"/crm/workflows/executions",label:"Execution Monitor",icon:BarChart3}
 ];
 
 const statuses = ["new", "contacted", "qualified", "proposal", "negotiation", "won", "lost", "nurture"];
@@ -75,6 +85,7 @@ export default function CRMPage() {
   const [userEmail, setUserEmail] = useState("");
   const [authMessage, setAuthMessage] = useState("");
   const [view, setView] = useState<View>("dashboard");
+  const [operationsOpen,setOperationsOpen]=useState(false);
   const [workspace, setWorkspace] = useState<any>(null);
   const [dashboard, setDashboard] = useState<any>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -286,12 +297,14 @@ export default function CRMPage() {
           <div><strong>SAVRDH AI OS</strong><span>INTELLIGENCE WORKFORCE</span></div>
         </div>
 
-        <nav className="crm-nav">
-          {nav.map(({ id, label, icon: Icon }) => (
-            <button key={id} className={view === id ? "active" : ""} onClick={() => setView(id)}>
-              <Icon size={15} /> {label}<span className="nav-dot" />
-            </button>
-          ))}
+        <nav className="crm-nav" aria-label="SAVRDH AI OS">
+          {nav.slice(0,1).map(({id,label,icon:Icon})=><button key={id} className={view===id?"active":""} onClick={()=>setView(id)}><Icon size={15}/>{label}<span className="nav-dot"/></button>)}
+          <span className="ai-os-nav-heading">WORKFORCE STUDIO</span>
+          {studioLinks.map(({href,label,icon:Icon})=><Link key={href} className="ai-os-nav-link" href={href}><Icon size={15}/>{label}</Link>)}
+          <span className="ai-os-nav-heading">MANAGEMENT</span>
+          {nav.slice(1).map(({id,label,icon:Icon})=><button key={id} className={view===id?"active":""} onClick={()=>setView(id)}><Icon size={15}/>{label}<span className="nav-dot"/></button>)}
+          <button aria-expanded={operationsOpen} onClick={()=>setOperationsOpen(v=>!v)}><BriefcaseBusiness size={15}/>Business Operations {operationsOpen?"−":"+"}</button>
+          {operationsOpen&&operationNav.map(({id,label,icon:Icon})=><button key={id} className={view===id?"active":""} onClick={()=>setView(id)}><Icon size={15}/>{label}<span className="nav-dot"/></button>)}
         </nav>
 
         <div className="crm-sidebar-foot">
@@ -307,7 +320,7 @@ export default function CRMPage() {
         <header className="crm-topbar">
           <div className="crm-title-wrap">
             <small>SAVRDH AI OS · COMMAND CENTER</small>
-            <h1>{nav.find((x) => x.id === view)?.label}</h1>
+            <h1>{[...nav,...operationNav].find((x) => x.id === view)?.label}</h1>
           </div>
           <div className="crm-top-actions">
             <NotificationBell />

@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Bot, Boxes, Activity, ShieldCheck, FlaskConical, Network, Bug } from "lucide-react";
+import { Bot, Boxes, Activity, ShieldCheck, FlaskConical, Network, Bug, Users } from "lucide-react";
 import WorkflowsRouteShell from "../workflows/WorkflowsRouteShell";
 
 const shortcuts = [
+  { href: "/crm/workforce", label: "Workforce Control", icon: Users, detail: "Plan agent assignments by product" },
   { href: "/crm/agent-studio/debug", label: "Debug Console", icon: Bug, detail: "Inspect runs and redacted node logs" },
   { href: "/crm/agents", label: "Agent Library", icon: Bot, detail: "Choose and configure an agent" },
   { href: "/crm/workflows/executions", label: "Execution Logs", icon: Activity, detail: "Inspect workflow runs and failures" },
