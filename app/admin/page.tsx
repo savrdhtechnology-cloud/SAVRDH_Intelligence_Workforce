@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Activity, ArrowRight, BarChart3, Bell, Bot, BrainCircuit, CheckCircle2, ChevronDown, ClipboardCheck, Database, ExternalLink, FileText, GitBranch, LayoutDashboard, LockKeyhole, Network, Pause, Plus, Search, Settings2, ShieldCheck, TestTube2, Workflow, X } from "lucide-react";
+import { Activity, ArrowRight, BarChart3, Bell, Bot, BrainCircuit, CheckCircle2, ChevronDown, ClipboardCheck, Database, ExternalLink, FileText, GitBranch, LayoutDashboard, LockKeyhole, Network, Pause, Plus, Search, Settings2, ShieldCheck, Sparkles, TestTube2, Workflow, X } from "lucide-react";
 import { crmSupabase, crmSupabaseConfigured } from "../crm/supabase-client";
 import "./admin.css";
 import AppearanceStudio, {useSavedAdminAppearance} from "./AppearanceStudio";
