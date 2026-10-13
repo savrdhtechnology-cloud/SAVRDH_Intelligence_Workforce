@@ -37,3 +37,13 @@ Then `sav_ai_crm_process_autonomous_queue(100)` runs every pending agent task th
 ## Security
 
 `20261013151000_autopilot_lockdown.sql` removes the public key's ability to run the cycle, send reminder emails or apply the fee gate. Only the hourly job (postgres) and server code with the service-role key can run them.
+
+## Trial runs need approval
+
+A manual trial of the autopilot never runs straight away. It is filed as a request and waits in **Admin → Human Approvals → Trial run approvals** (`supabase/migrations/20261013170000_trial_run_approvals.sql`).
+
+1. Anyone with CRM write access (or server automation via `sav_ai_crm.request_trial_run_system`) files a request with a reason and a lead limit.
+2. The card shows a live preview: AKBS leads, new agent tasks it would create, **customer emails it would send**, and agent tasks waiting to run.
+3. An owner or admin presses **Approve & run** (it runs immediately and the result is saved) or **Reject**. Requests expire after 72 hours. Every step is written to `audit_logs`.
+
+This gate covers manual trials only; the hourly autopilot keeps running unchanged.
