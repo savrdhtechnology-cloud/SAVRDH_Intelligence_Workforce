@@ -20,11 +20,11 @@ export default function AgentStudioPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <span aria-hidden="true" style={{ border: "1px solid #1b736a", background: "#123a38", borderRadius: 12, padding: 10 }}><Network size={22} color="#66e6d5"/></span>
           <div>
-            <div style={{ color: "#62dacb", letterSpacing: 2, fontSize: 11, fontWeight: 700 }}>SAVRDH INTELLIGENCE WORKFORCE</div>
+            <div style={{ color: "#62dacb", letterSpacing: 2, fontSize: 11, fontWeight: 700 }}>SAVRDH AI OS</div>
             <h1 style={{ fontSize: "clamp(24px,3vw,34px)", margin: "3px 0" }}>AI Agent Studio</h1>
             <p style={{ color: "#93a3b8", fontSize: 13, margin: 0 }}>Design → Connect → Test → Review → Activate</p>
           </div>
-          <Link href="/crm" style={{ marginLeft: "auto", color: "#b8c7d8", textDecoration: "none", border: "1px solid #334155", padding: "9px 14px", borderRadius: 9 }}>Back to CRM</Link>
+          <Link href="/crm" style={{ marginLeft: "auto", color: "#b8c7d8", textDecoration: "none", border: "1px solid #334155", padding: "9px 14px", borderRadius: 9 }}>Back to AI OS</Link>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 12, marginTop: 22 }}>
           {shortcuts.map(({ href, label, icon: Icon, detail }) => (
