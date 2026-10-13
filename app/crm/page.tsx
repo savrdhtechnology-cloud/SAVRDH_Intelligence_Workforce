@@ -72,7 +72,7 @@ const operationNav:{id:View;label:string;icon:typeof LayoutDashboard}[]=[
 ];
 const studioLinks=[
   {href:"/crm/workforce",label:"Agent Assignments",icon:BriefcaseBusiness},
-  {href:"/crm/agents",label:"AI Agent Factory",icon:Bot},
+  {href:"/crm/agent-factory",label:"AI Agent Factory",icon:Bot},
   {href:"/crm/agent-studio",label:"Visual Agent Studio",icon:Workflow},
   {href:"/crm/agent-studio/debug",label:"Execution Debugger",icon:Activity},
   {href:"/crm/workflows/executions",label:"Execution Monitor",icon:BarChart3}
