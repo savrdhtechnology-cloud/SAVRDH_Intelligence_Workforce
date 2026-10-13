@@ -4,8 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Activity, ArrowRight, BarChart3, Bell, Bot, BrainCircuit, CheckCircle2, ChevronDown, ClipboardCheck, Database, ExternalLink, FileText, GitBranch, LayoutDashboard, LockKeyhole, Network, Pause, Plus, Search, Settings2, ShieldCheck, TestTube2, Workflow, X } from "lucide-react";
 import { crmSupabase, crmSupabaseConfigured } from "../crm/supabase-client";
 import "./admin.css";
+import AppearanceStudio, {useSavedAdminAppearance} from "./AppearanceStudio";
 
-type Section = "overview"|"factory"|"library"|"assignments"|"workflows"|"testing"|"executions"|"integrations"|"knowledge"|"approvals"|"analytics"|"settings";
+type Section = "overview"|"factory"|"library"|"assignments"|"workflows"|"testing"|"executions"|"integrations"|"knowledge"|"approvals"|"analytics"|"settings"|"appearance";
 type Module = {id:Section; name:string; subtitle:string; icon:typeof Bot; href?:string};
 const modules:Module[]=[
  {id:"overview",name:"Command Dashboard",subtitle:"Operations overview",icon:LayoutDashboard},
@@ -19,7 +20,8 @@ const modules:Module[]=[
  {id:"knowledge",name:"Knowledge & Memory",subtitle:"Documents & context",icon:Database},
  {id:"approvals",name:"Human Approvals",subtitle:"Sensitive action review",icon:ClipboardCheck},
  {id:"analytics",name:"Analytics & Reports",subtitle:"Workforce performance",icon:BarChart3},
- {id:"settings",name:"Admin Settings",subtitle:"Permissions & policy",icon:Settings2}
+ {id:"settings",name:"Admin Settings",subtitle:"Permissions & policy",icon:Settings2},
+ {id:"appearance",name:"Appearance Studio",subtitle:"Themes, fonts & animations",icon:Sparkles}
 ];
 const products=["Savrdh Technology CRM","EngageX Marketing CRM","Savrdh AutoOS","JARVIS Brain Control","Savrdh Financial Services","Other Products"];
 const roles=["Sales Agent","Follow-up Agent","Finance Agent","Support Agent","Marketing Agent","BDE Agent","Custom Agent"];
@@ -33,6 +35,7 @@ const presets=[
 ];
 
 export default function AdminWorkspace(){
+ useSavedAdminAppearance();
  const [current,setCurrent]=useState<Section>("overview");
  const [query,setQuery]=useState("");
  const [sidebar,setSidebar]=useState(true);
@@ -89,6 +92,7 @@ export default function AdminWorkspace(){
     {current==="knowledge"&&<div className="savos-panel"><h2>Knowledge & Memory Center</h2><p>Planned: approved documents, per-agent access scopes, file versioning, citations, retention policies and controlled conversation memory.</p><div className="savos-empty"><Database size={30}/><b>No knowledge sources loaded in this Admin UI</b><small>Connect the existing knowledge backend before enabling uploads or search.</small></div></div>}
     {current==="approvals"&&<div className="savos-panel"><h2>Human Approval Desk</h2><p>High-risk messages, financial actions, permissions and customer-facing steps require server-enforced approval before execution.</p><div className="savos-empty"><ClipboardCheck size={30}/><b>Use the live Agent approval queue</b><small>This UI does not invent approvals or modify sensitive actions.</small><Link href="/crm/agents">Open Agent Approvals <ArrowRight size={15}/></Link></div></div>}
     {current==="analytics"&&<div className="savos-panel"><h2>Analytics & Reports</h2><p>Planned dashboards: success rate, agent throughput, costs, task completion and product-wise utilization. No fabricated numbers displayed.</p><div className="savos-empty"><BarChart3 size={30}/><b>Verified reporting will use real execution data</b></div></div>}
+    {current==="appearance"&&<AppearanceStudio/>}
     {current==="settings"&&<div className="savos-panel"><h2>Admin Policies</h2><div className="savos-item-list">{["Role-based access","Product / tenant isolation","Human approval controls","Model & provider configuration","Credential management","Audit logs and data retention"].map(k=><div key={k}><ShieldCheck size={16}/>{k}<em>Backend controls required</em></div>)}</div></div>}
     </div>
     <footer>© SAVRDH Technologies · AI OS Admin Workspace · UI-only preview, existing services preserved</footer>
