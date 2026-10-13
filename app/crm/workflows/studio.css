@@ -16,3 +16,9 @@
 .workflow-node{touch-action:none}
 @media(max-width:800px){.studio-canvas-heading span{display:none}.studio-palette{min-width:0}.studio-console-tabs{flex-wrap:wrap}}
 @media(prefers-reduced-motion:reduce){.studio-palette button{transition:none!important}}
+
+.workflow-node .studio-output-port{position:absolute;right:-13px;top:26px;width:23px;height:23px;border-radius:50%;border:1px solid #59dccc;background:#133b3d;display:flex;align-items:center;justify-content:center;color:#d6fffa;z-index:5;cursor:crosshair;box-shadow:0 0 0 3px #0d1922}
+.workflow-node .studio-output-port:hover,.workflow-node .studio-output-port:focus-visible{background:#2a716a;outline:2px solid #bafff2;outline-offset:2px}
+.workflow-node.connecting .studio-output-port{background:#358f7c;box-shadow:0 0 0 5px #2e88734d}
+.workflow-node:has(.studio-output-port){overflow:visible}
+.studio-panning,.studio-panning *{user-select:none}
