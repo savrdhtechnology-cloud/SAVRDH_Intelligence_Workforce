@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import "./studio.css";
 import { AnimatePresence, motion } from "framer-motion";
 import { FormEvent, PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
