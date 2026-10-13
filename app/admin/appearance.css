@@ -28,3 +28,19 @@
 .appearance-demo-cards small{opacity:.65}.appearance-demo button{font-weight:700;border:0}
 @media(max-width:1000px){.appearance-columns{grid-template-columns:1fr}.appearance-preview{position:static}}
 @media(prefers-reduced-motion:reduce){.appearance-studio *{animation:none!important;transition:none!important}}
+
+/* DevStudio Motion preset — purely decorative layers, no pointer interception */
+.savos-root[data-theme="devstudio"]{position:relative;isolation:isolate;background:var(--savos-bg)!important}
+.savos-root[data-theme="devstudio"]::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;background:linear-gradient(105deg,transparent 0 22%,#16b9c914 45%,transparent 70%),radial-gradient(ellipse at 73% 18%,#0d8eac42,transparent 46%),repeating-linear-gradient(90deg,transparent 0 109px,#5de4ee0b 110px 111px),repeating-linear-gradient(0deg,transparent 0 109px,#5de4ee09 110px 111px);background-size:150% 150%,100% 100%,110px 110px,110px 110px;animation:savos-ambient calc(24s / var(--savos-speed,1)) ease-in-out infinite alternate}
+.savos-root[data-theme="devstudio"] .savos-main{position:relative;z-index:0}
+.savos-root[data-theme="devstudio"] .savos-main::before{content:"";position:fixed;inset:0 0 0 255px;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 70% 15%,#4bd7f51c,transparent 42%),linear-gradient(125deg,transparent 30%,#29dccc08 50%,transparent 74%);background-size:100% 100%,170% 170%;animation:savos-ambient calc(19s / var(--savos-speed,1)) ease-in-out infinite alternate}
+.savos-root[data-theme="devstudio"] .savos-panel,.savos-root[data-theme="devstudio"] .savos-module-card,.savos-root[data-theme="devstudio"] .savos-hero{background:linear-gradient(150deg,#102b4092,#092133da)!important;backdrop-filter:blur(12px);box-shadow:inset 0 1px #9ceffa1a,0 16px 45px #02080f2d;border-color:#54d8e334}
+.savos-root[data-theme="devstudio"] .savos-top,.savos-root[data-theme="devstudio"] .savos-sidebar{background:#071524e8!important;backdrop-filter:blur(15px)}
+.savos-root[data-theme="devstudio"] .savos-logo,.savos-root[data-theme="devstudio"] .savos-module-icon{box-shadow:0 0 24px #3bebea28}
+.savos-root[data-theme="devstudio"] .savos-module-card:hover{box-shadow:0 0 22px #4ce5ef31;transform:translateY(-3px)}
+.appearance-demo-devstudio{position:relative;isolation:isolate;background-image:radial-gradient(ellipse at 85% 20%,#42d9e62f,transparent 60%),repeating-linear-gradient(90deg,transparent 0 55px,#6de9ef10 56px 57px),repeating-linear-gradient(0deg,transparent 0 55px,#6de9ef0c 56px 57px)!important;background-size:120% 120%,57px 57px,57px 57px}
+.appearance-demo-devstudio::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;background:linear-gradient(120deg,transparent 25%,#59eef014 50%,transparent 75%);background-size:180% 180%;animation:savos-ambient 12s ease-in-out infinite alternate}
+@keyframes savos-ambient{from{background-position:0% 20%}to{background-position:100% 85%}}
+.savos-root[data-motion="off"]::before,.savos-root[data-motion="off"] .savos-main::before,.appearance-demo[data-motion="off"]::before{animation:none!important}
+@media(max-width:800px){.savos-root[data-theme="devstudio"] .savos-main::before{left:69px}}
+@media(prefers-reduced-motion:reduce){.savos-root::before,.savos-root .savos-main::before,.appearance-demo::before{animation:none!important}}
