@@ -34,3 +34,5 @@ AI orchestration, workflow engine, lead engine, knowledge base, conversation mem
 - AKBS Poultry CRM
 
 Integration will be decided and implemented later.
+## AI brain
+Agents run on a self-hosted open model by default (Ollama on a Mac for development, vLLM on a GPU server for production) — no paid AI API. OpenAI remains an optional fallback. Setup: `docs/SELF-HOSTED-AI.md`, then `npm run ai:check`.
