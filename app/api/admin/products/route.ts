@@ -4,7 +4,7 @@ import {jsonError} from "../../../../lib/ai/server-supabase";
 export async function GET(req:NextRequest){
  const c=await adminContext(req);if("error" in c)return c.error;
  const {data,error}=await c.admin.schema("sav_ai_admin").from("products").select("id,workspace_id,product_key,name,description,connection_status,created_at").in("workspace_id",c.workspaceIds).order("name").limit(100);
- return error?apiFailure("Unable to read product registry"):Response.json({products:data||[]});
+ return error?apiFailure("Unable to read product registry"):Response.json({products:data||[],workspaceIds:c.workspaceIds});
 }
 export async function POST(req:NextRequest){
  const c=await adminContext(req);if("error" in c)return c.error;
