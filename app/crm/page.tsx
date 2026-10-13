@@ -248,7 +248,7 @@ export default function CRMPage() {
     return stages.map((stage) => ({ stage, items: leads.filter((l) => l.status === stage) }));
   }, [leads]);
 
-  if (!crmSupabaseConfigured) return <div className="crm-auth-page"><div className="crm-auth-card" role="alert"><h2>CRM configuration required</h2><p>Supabase environment is not configured for this deployment.</p></div></div>;
+  if (!crmSupabaseConfigured) return <div className="crm-auth-page"><div className="crm-auth-card" role="alert"><h2>Savrdh AI OS configuration required</h2><p>Supabase environment is not configured for this deployment.</p></div></div>;
 
   if (!sessionReady) return <div className="crm-auth-page" />;
 
@@ -258,8 +258,8 @@ export default function CRMPage() {
         <motion.section className="crm-auth-art" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <div className="crm-auth-copy">
             <span>SAVRDH INTELLIGENCE WORKFORCE</span>
-            <h1>AI-native CRM.<br />Built to move work.</h1>
-            <p>Manage leads, conversations, tasks, workflows and AI agents from one motion-driven command center. The CRM database is isolated in its own Savrdh Technology schema for clean future migration.</p>
+            <h1>Savrdh AI OS.<br />Your intelligent workforce.</h1>
+            <p>Manage leads, conversations, tasks, workflows and AI agents from one motion-driven command center. Your AI operations run on a dedicated Savrdh Technology data workspace.</p>
           </div>
         </motion.section>
 
@@ -283,7 +283,7 @@ export default function CRMPage() {
       <aside className="crm-sidebar">
         <div className="crm-brand">
           <div className="crm-brand-mark"><Sparkles size={16} /></div>
-          <div><strong>SAVRDH AI</strong><span>INTELLIGENCE CRM</span></div>
+          <div><strong>SAVRDH AI OS</strong><span>INTELLIGENCE WORKFORCE</span></div>
         </div>
 
         <nav className="crm-nav">
@@ -306,7 +306,7 @@ export default function CRMPage() {
       <main className="crm-main">
         <header className="crm-topbar">
           <div className="crm-title-wrap">
-            <small>SAV AI COMMAND CENTER</small>
+            <small>SAVRDH AI OS · COMMAND CENTER</small>
             <h1>{nav.find((x) => x.id === view)?.label}</h1>
           </div>
           <div className="crm-top-actions">
@@ -409,7 +409,7 @@ function Dashboard({ dashboard, onNavigate }: { dashboard: any; onNavigate: (vie
     </div>
     <div className="crm-dashboard-grid">
       <div className="crm-panel">
-        <div className="crm-panel-head"><h3>Operational Pulse</h3><span>Real-time CRM counters</span></div>
+        <div className="crm-panel-head"><h3>Operational Pulse</h3><span>Real-time operations</span></div>
         <div className="crm-chart">
           {numericValues.map((v, i) => <motion.div key={i} className="crm-chart-bar" initial={{ height: 18 }} animate={{ height: Math.max(18, 180 * (v / max)) }} transition={{ delay: i * .06, type: "spring" }} />)}
         </div>
@@ -419,7 +419,7 @@ function Dashboard({ dashboard, onNavigate }: { dashboard: any; onNavigate: (vie
         <div className="crm-activity-list">
           {(dashboard?.recent_activity || []).length ? dashboard.recent_activity.map((a: any) => (
             <div className="crm-activity" key={a.id}><i /><div><b>{a.title}</b><span>{a.description || a.activity_type}</span></div><time>{shortDate(a.created_at)}</time></div>
-          )) : <EmptyMini text="No activity yet. CRM events will appear here automatically." />}
+          )) : <EmptyMini text="No activity yet. AI OS events will appear here automatically." />}
         </div>
       </div>
     </div>
@@ -500,7 +500,7 @@ function SimpleList({ title, icon: Icon, items, empty }: any) {
 }
 
 function SettingsView({ workspace }: any) {
-  return <div className="crm-dashboard-grid"><div className="crm-panel"><div className="crm-panel-head"><h3>Workspace</h3><span>Isolated CRM namespace</span></div><div className="crm-activity-list">
+  return <div className="crm-dashboard-grid"><div className="crm-panel"><div className="crm-panel-head"><h3>Workspace</h3><span>Isolated AI OS workspace</span></div><div className="crm-activity-list">
     <div className="crm-activity"><i /><div><b>{workspace?.company_name || "Savrdh Technology"}</b><span>Workspace: {workspace?.slug}</span></div><time>{workspace?.status || "active"}</time></div>
     <div className="crm-activity"><i /><div><b>Database Isolation</b><span>Schema: sav_ai_crm — designed for later migration</span></div><time>Ready</time></div>
   </div></div><EmptyState icon={Settings} title="Configuration center" text="Provider credentials, channel policies and organization settings can be added here next." /></div>;

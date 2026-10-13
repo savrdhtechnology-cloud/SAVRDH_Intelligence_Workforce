@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import "./studio.css";
 import { AnimatePresence, motion } from "framer-motion";
 import { FormEvent, PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -42,6 +43,17 @@ export default function WorkflowsModule({focusedId}:{focusedId?:string}){
   const [testContext,setTestContext]=useState('{"lead":{"id":"","source":"website","status":"new","priority":"high","value":500000}}');
   const [testResult,setTestResult]=useState<any>(null);
   const [agents,setAgents]=useState<any[]>([]);
+  const [nodeSearch,setNodeSearch]=useState("");
+  const [studioTab,setStudioTab]=useState<"test"|"executions">("test");
+  const [testBusy,setTestBusy]=useState(false);
+  const [fixture,setFixture]=useState("custom");
+  const fixtures:Record<string,string>={
+    lead:JSON.stringify({lead:{id:"TEST-LEAD-001",source:"website",status:"new",priority:"medium"}},null,2),
+    followup:JSON.stringify({lead:{id:"TEST-LEAD-001",status:"contacted"},task:{id:"TEST-TASK-001",status:"due",type:"follow_up"}},null,2),
+    reply:JSON.stringify({conversation:{id:"TEST-CONV-001",channel:"chat"},message:{text:"Please share more details",direction:"inbound"}},null,2),
+    fee:JSON.stringify({lead:{id:"TEST-LEAD-001",status:"fee_pending"},payment:{status:"pending",amount:2999}},null,2),
+  };
+  const [nodeLogs,setNodeLogs]=useState(false);
 
   async function refresh(preferred?:string){
     setLoading(true);setError("");
@@ -87,8 +99,10 @@ export default function WorkflowsModule({focusedId}:{focusedId?:string}){
   }
   async function runTest(){
     if(!selected)return;setTestResult(null);setError("");
-    try{const ctx=JSON.parse(testContext);setTestResult(await testWorkflow(selected,ctx));}
+    setTestBusy(true);
+    try{const ctx=JSON.parse(testContext);if(!ctx||typeof ctx!=="object"||Array.isArray(ctx))throw new Error("Test context must be a JSON object.");setTestResult(await testWorkflow(selected,ctx));}
     catch(e){setTestResult({error:e instanceof Error?e.message:"Test failed."});}
+    finally{setTestBusy(false);}
   }
   async function execute(){
     if(!selected)return;
@@ -109,8 +123,11 @@ export default function WorkflowsModule({focusedId}:{focusedId?:string}){
   }
   function nodeClick(id:string){
     if(connectFrom&&connectFrom!==id){
+      const from=graph.nodes.find(n=>n.id===connectFrom),to=graph.nodes.find(n=>n.id===id);
+      if(!from||!to||from.type==="END"||to.type==="TRIGGER"){setError("Connections must start at a non-END node and finish at a non-TRIGGER node.");setConnectFrom(null);return;}
+      if(graph.edges.some(e=>e.source===connectFrom&&e.target===id)){setError("This connection already exists.");setConnectFrom(null);return;}
       const edgeId=`edge-${connectFrom}-${id}-${Date.now()}`;
-      setGraph(g=>({...g,edges:[...g.edges,{id:edgeId,source:connectFrom,target:id}]}));setConnectFrom(null);
+      setGraph(g=>({...g,edges:[...g.edges,{id:edgeId,source:connectFrom,target:id}]}));setConnectFrom(null);setError("");
     }else setSelectedNode(id);
   }
   function updateNode(node:WorkflowNode){setGraph(g=>({...g,nodes:g.nodes.map(n=>n.id===node.id?node:n)}));}
@@ -218,9 +235,12 @@ export default function WorkflowsModule({focusedId}:{focusedId?:string}){
           </div>
 
           <div className="workflow-builder-wrap">
-            <div className="workflow-palette">
-              <b>Nodes</b>
-              {WORKFLOW_NODE_TYPES.filter(t=>!["TRIGGER","END"].includes(t)).map(t=><button key={t} onClick={()=>addNode(t)}><Plus size={10}/>{t.replaceAll("_"," ")}</button>)}
+            <div className="workflow-palette studio-palette">
+              <b>Node Library</b>
+              <label className="studio-node-search"><span>Search nodes</span><input value={nodeSearch} onChange={e=>setNodeSearch(e.target.value)} placeholder="Agent, trigger, action..." aria-label="Search workflow nodes"/></label>
+              <small>CLICK TO ADD</small>
+              {WORKFLOW_NODE_TYPES.filter(t=>!["TRIGGER","END"].includes(t)&&t.replaceAll("_"," ").toLowerCase().includes(nodeSearch.toLowerCase().trim())).map(t=><button key={t} onClick={()=>addNode(t)}><Plus size={12}/><span>{t.replaceAll("_"," ")}</span></button>)}
+              {!WORKFLOW_NODE_TYPES.some(t=>!["TRIGGER","END"].includes(t)&&t.replaceAll("_"," ").toLowerCase().includes(nodeSearch.toLowerCase().trim()))&&<p>No matching nodes.</p>}
             </div>
             <WorkflowCanvas
               graph={graph}
@@ -230,6 +250,7 @@ export default function WorkflowsModule({focusedId}:{focusedId?:string}){
               executionState={executionState}
               nodeExecutions={latestNodeExecutions}
               onNodeClick={nodeClick}
+              onConnectFrom={id=>{setSelectedNode(id);setConnectFrom(id);setError("");}}
               onMove={(id,pos)=>setGraph(g=>({...g,nodes:g.nodes.map(n=>n.id===id?{...n,position:pos}:n)}))}
             />
             <div className="workflow-inspector">
@@ -241,17 +262,24 @@ export default function WorkflowsModule({focusedId}:{focusedId?:string}){
             </div>
           </div>
 
-          <div className="workflow-test-panel">
+          <div className="studio-console-tabs" role="tablist" aria-label="Studio console">
+            <button type="button" role="tab" aria-selected={studioTab==="test"} onClick={()=>setStudioTab("test")}><TestTube2 size={14}/> Test workspace</button>
+            <button type="button" role="tab" aria-selected={studioTab==="executions"} onClick={()=>setStudioTab("executions")}><Activity size={14}/> Execution history</button>
+          </div>
+          {studioTab==="test"&&<div className="workflow-test-panel">
             <div className="agent-console-head"><TestTube2 size={15}/><div><b>TEST WORKFLOW</b><span>Plan first. Execution requires explicit confirmation.</span></div></div>
-            <textarea value={testContext} onChange={e=>setTestContext(e.target.value)}/>
-            <div><button onClick={runTest}><TestTube2 size={12}/>Plan Test</button><button className="primary" onClick={execute}><Zap size={12}/>Execute Confirmed</button></div>
-            {testResult&&<pre>{JSON.stringify(testResult,null,2)}</pre>}
-          </div>
+            <label className="studio-fixture-label">Test scenario <select value={fixture} onChange={e=>{const v=e.target.value;setFixture(v);if(fixtures[v])setTestContext(fixtures[v]);}}><option value="custom">Custom JSON</option><option value="lead">New lead</option><option value="followup">Follow-up due</option><option value="reply">Customer reply</option><option value="fee">Fee pending</option></select></label>
+            <textarea aria-label="Workflow test context JSON" value={testContext} onChange={e=>{setTestContext(e.target.value);setFixture("custom");}}/>
+            <div><button disabled={testBusy} onClick={runTest}><TestTube2 size={12}/>{testBusy?"Testing...":"Plan Test (No Send)"}</button><button className="primary" onClick={execute}><Zap size={12}/>Execute Confirmed</button></div>
+            {testResult&&<><div role="status" style={{marginTop:8,fontSize:12,color:"#99e3cd"}}>Server test response (not a live delivery confirmation)</div><pre>{JSON.stringify(testResult,null,2)}</pre></>}
+          </div>}
 
-          <div className="workflow-history">
+          {studioTab==="executions"&&<div className="workflow-history">
             <div className="crm-panel-head"><h3>Recent executions</h3><Link href="/crm/workflows/executions">View all</Link></div>
+            <button type="button" onClick={()=>setNodeLogs(v=>!v)} aria-expanded={nodeLogs} style={{marginBottom:12}}>{nodeLogs?"Hide":"Show"} latest node logs</button>
+            {nodeLogs&&<pre style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere",maxHeight:260,overflowY:"auto"}}>{JSON.stringify(latestNodeExecutions.map((x:any)=>({node:x.node_key,status:x.status,started_at:x.started_at,completed_at:x.completed_at,error:x.error})),null,2)}</pre>}
             {(detail.executions||[]).length?<div className="crm-activity-list">{detail.executions.map((e:any)=><Link className="crm-activity" href={`/crm/workflows/executions/${e.id}`} key={e.id}><i/><div><b>{e.trigger}</b><span>{e.execution_state} · node {e.current_node_id||"complete"}</span></div><time>{new Date(e.updated_at).toLocaleString("en-IN")}</time></Link>)}</div>:<p className="workflow-empty-copy">No executions yet.</p>}
-          </div>
+          </div>}
         </>}
       </motion.section>
       </AnimatePresence>
@@ -269,7 +297,7 @@ function Metric({label,value}:{label:string;value:number}){return <motion.div
 ><span>{label}</span><strong>{value}</strong></motion.div>}
 
 function WorkflowCanvas({
-  graph,selectedNode,connectFrom,executingNodeId,executionState,nodeExecutions,onNodeClick,onMove
+  graph,selectedNode,connectFrom,executingNodeId,executionState,nodeExecutions,onNodeClick,onConnectFrom,onMove
 }:{
   graph:WorkflowGraph;
   selectedNode:string|null;
@@ -278,11 +306,13 @@ function WorkflowCanvas({
   executionState:string|null;
   nodeExecutions:Array<{node_key:string;status:string}>;
   onNodeClick:(id:string)=>void;
+  onConnectFrom:(id:string)=>void;
   onMove:(id:string,pos:{x:number;y:number})=>void;
 }){
   const canvas=useRef<HTMLDivElement>(null);
   const [zoom,setZoom]=useState(1);
   const [pan,setPan]=useState({x:0,y:0});
+  const [isPanning,setIsPanning]=useState(false);
 
   function clampZoom(next:number){return Math.min(1.6,Math.max(.55,next));}
   function bounds(){
@@ -344,12 +374,23 @@ function WorkflowCanvas({
     return ()=>el.removeEventListener("wheel",handleWheel);
   },[graph.nodes, zoom]);
   function down(e:ReactPointerEvent<HTMLButtonElement>,node:WorkflowNode){
+    if(e.button!==0)return;
+    e.stopPropagation();
     const startX=e.clientX,startY=e.clientY,start=node.position;
     const move=(ev:PointerEvent)=>onMove(node.id,{
       x:Math.max(10,start.x+(ev.clientX-startX)/zoom),
       y:Math.max(10,start.y+(ev.clientY-startY)/zoom)
     });
     const up=()=>{window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",up)};
+    window.addEventListener("pointermove",move);window.addEventListener("pointerup",up);
+  }
+  function canvasDown(e:ReactPointerEvent<HTMLDivElement>){
+    if(e.target!==canvas.current && !(e.target instanceof Element && e.target.classList.contains("workflow-canvas-stage")))return;
+    if(e.button!==0)return;
+    const start={x:e.clientX,y:e.clientY}, initial=pan;
+    setIsPanning(true);
+    const move=(ev:PointerEvent)=>setPan({x:initial.x+ev.clientX-start.x,y:initial.y+ev.clientY-start.y});
+    const up=()=>{setIsPanning(false);window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",up);};
     window.addEventListener("pointermove",move);window.addEventListener("pointerup",up);
   }
   const byId=new Map(graph.nodes.map(n=>[n.id,n]));
@@ -363,12 +404,14 @@ function WorkflowCanvas({
         :"exec-running";
 
   return <motion.div
-    className="workflow-canvas"
+    className={`workflow-canvas ${isPanning?"studio-panning":""}`}
     ref={canvas}
+    onPointerDown={canvasDown}
     initial={{opacity:0,scale:.99}}
     animate={{opacity:1,scale:1}}
     transition={{duration:.32,ease:[.22,1,.36,1]}}
   >
+    <div className="studio-canvas-heading"><b>WORKFLOW CANVAS</b><span>Drag nodes · Connect using Inspector · Pan empty canvas</span></div>
     <div className="workflow-zoom-controls">
       <button onClick={()=>zoomBy(-.1)} title="Zoom out"><Minus size={13}/></button>
       <button className="workflow-zoom-value" onClick={resetView} title="Reset zoom">{Math.round(zoom*100)}%</button>
@@ -404,6 +447,7 @@ function WorkflowCanvas({
           whileTap={{scale:.985}}
         >
           {nodeProcessClass&&<i className="workflow-exec-dot"/>}
+          {n.type!=="END"&&<span className="studio-output-port" role="button" tabIndex={0} aria-label={`Connect from ${n.label}`} onPointerDown={ev=>ev.stopPropagation()} onClick={ev=>{ev.stopPropagation();onConnectFrom(n.id);}} onKeyDown={ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();onConnectFrom(n.id);}}}><Plus size={10}/></span>}
           <span>{n.type}</span><b>{n.label}</b><small>{nodeSummary(n)}</small>
         </motion.button>;
       })}
@@ -413,12 +457,14 @@ function WorkflowCanvas({
 
 function NodeInspector({node,agents,onChange,onConnect,onDelete}:{node:WorkflowNode;agents:any[];onChange:(n:WorkflowNode)=>void;onConnect:()=>void;onDelete:()=>void}){
   const [json,setJson]=useState(JSON.stringify(node.config,null,2));
-  useEffect(()=>setJson(JSON.stringify(node.config,null,2)),[node.id]);
+  const [configError,setConfigError]=useState("");
+  useEffect(()=>{setJson(JSON.stringify(node.config,null,2));setConfigError("");},[node.id]);
   return <div className="workflow-node-inspector">
     <b>{node.type}</b>
     <label>Label<input value={node.label} onChange={e=>onChange({...node,label:e.target.value})}/></label>
     {node.type==="AI_AGENT"&&<label>Agent<select value={String(node.config.agent_id||"")} onChange={e=>onChange({...node,config:{...node.config,agent_id:e.target.value}})}><option value="">Select agent</option>{agents.map(a=><option key={a.id} value={a.id}>{a.display_name||a.name}</option>)}</select></label>}
-    <label>Configuration JSON<textarea value={json} onChange={e=>{setJson(e.target.value);try{onChange({...node,config:JSON.parse(e.target.value)})}catch{}}}/></label>
+    <label>Configuration JSON<textarea aria-invalid={Boolean(configError)} value={json} onChange={e=>{setJson(e.target.value);try{const parsed=JSON.parse(e.target.value);if(!parsed||typeof parsed!=="object"||Array.isArray(parsed))throw Error("Configuration must be a JSON object.");onChange({...node,config:parsed});setConfigError("");}catch(err){setConfigError(err instanceof Error?err.message:"Invalid JSON");}}}/></label>
+    {configError&&<p role="alert" style={{color:"#ff9c92",fontSize:11}}>{configError} — not applied until valid.</p>}
     <div className="workflow-inspector-actions"><button onClick={onConnect}><GitBranch size={11}/>Connect from node</button>{!["TRIGGER","END"].includes(node.type)&&<button className="danger" onClick={onDelete}><Trash2 size={11}/>Delete node</button>}</div>
   </div>;
 }
