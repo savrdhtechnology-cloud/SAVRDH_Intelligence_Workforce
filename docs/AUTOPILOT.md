@@ -19,6 +19,8 @@ Source: `supabase/migrations/20261013150000_autopilot_live_baseline.sql` (export
 | **PROPOSAL / NEGOTIATION** | Task for **SAV-Sales-Manager**. |
 | **CLOSED** (won/lost/closed) | Autopilot stops for this lead. |
 
+**Customer emails need approval (since 13 Oct):** a due reminder is not sent; it waits in Admin → Human Approvals → Email approvals with the full text. Only an owner or admin can send it; if the lead changes first, it is cancelled and nothing is sent.
+
 Reminders: at most 3 per stage — after 24 hours, then 3 days, then 7 days — then the lead is marked escalated. Every action is logged in `lead_autopilot_events` and the lead's activity timeline.
 
 Then `sav_ai_crm_process_autonomous_queue(100)` runs every pending agent task through the workflow mapped to its work type (`task_workflow_routes`), e.g. sales → "Sales Task Execution".

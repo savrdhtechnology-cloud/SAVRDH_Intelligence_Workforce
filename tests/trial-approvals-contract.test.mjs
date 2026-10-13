@@ -23,7 +23,7 @@ test("trial approval functions are not callable with the public key",()=>{
 
 test("admin Human Approvals shows the trial approval desk with a preview",()=>{
   assert.match(page,/import TrialApprovals from "\.\/TrialApprovals"/);
-  assert.match(page,/current==="approvals"&&<><TrialApprovals\/>/);
+  assert.match(page,/current==="approvals"&&<>(<CustomerEmailApprovals\/>)?<TrialApprovals\/>/);
   for(const rpc of ["sav_ai_crm_trial_run_requests","sav_ai_crm_request_trial_run","sav_ai_crm_review_trial_run"]) assert.match(ui,new RegExp('rpc\\("'+rpc+'"'));
   assert.match(ui,/emails_to_send/);
   assert.match(ui,/window\.confirm/);

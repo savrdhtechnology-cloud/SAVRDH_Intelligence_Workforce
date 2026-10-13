@@ -53,7 +53,7 @@ export default function TrialApprovals(){
   }
 
   async function review(id:string,decision:"approve"|"reject"){
-    if(decision==="approve"&&!window.confirm("Run this autopilot trial on AKBS leads now? Tasks and customer reminder emails shown in the preview will be created.")) return;
+    if(decision==="approve"&&!window.confirm("Run this autopilot trial on AKBS leads now? Agent tasks shown in the preview will be created. Customer emails will only go to Email approvals; nothing is sent without your separate approval.")) return;
     setBusy(id);setError(null);
     const {data,error:rpcError}=await crmSupabase.rpc("sav_ai_crm_review_trial_run",{p_request_id:id,p_decision:decision,p_note:notes[id]||null});
     if(rpcError) setError(rpcError.message);
@@ -107,7 +107,7 @@ export default function TrialApprovals(){
         {r.result&&r.result.ok!==undefined&&r.status!=="rejected"&&<div className="savos-trial-stats">
           <Stat icon={Users} label="Leads checked" value={r.result.processed??0}/>
           <Stat icon={ClipboardCheck} label="Tasks created" value={r.result.tasks_created??0}/>
-          <Stat icon={Mail} label="Emails queued" value={r.result.emails_queued??0}/>
+          <Stat icon={Mail} label="Emails sent to approval" value={r.result.emails_queued??0}/>
           <Stat icon={XCircle} label="Errors" value={(r.result.errors??0)+(r.result.queue?.failed??0)}/>
         </div>}
         {r.error&&<div className="savos-error"><XCircle size={14}/> {r.error}</div>}
@@ -122,7 +122,7 @@ function PreviewStats({preview}:{preview:Preview}){
     <div className="savos-trial-stats">
       <Stat icon={Users} label="AKBS leads" value={preview?.leads??0}/>
       <Stat icon={ClipboardCheck} label="New agent tasks" value={preview?.tasks_to_create??0}/>
-      <Stat icon={Mail} label="Customer emails" value={preview?.emails_to_send??0} warn={(preview?.emails_to_send??0)>0}/>
+      <Stat icon={Mail} label="Emails for your approval" value={preview?.emails_to_send??0} warn={(preview?.emails_to_send??0)>0}/>
       <Stat icon={Play} label="Agent tasks to run" value={preview?.queued_agent_tasks??0}/>
     </div>
     {stages.length>0&&<div className="savos-trial-stages">{stages.map(([stage,count])=><span key={stage}>{stage.replace("_"," ").toLowerCase()} <b>{count}</b></span>)}</div>}
