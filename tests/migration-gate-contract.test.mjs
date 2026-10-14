@@ -36,7 +36,8 @@ const additionalMigrationFiles=[
  "supabase/migrations/20261004_engagex_sales_workflow_phase2.sql",
  "supabase/migrations/20261013150000_autopilot_live_baseline.sql",
  "supabase/migrations/20261013170000_trial_run_approvals.sql",
- "supabase/migrations/20261013180000_customer_email_approvals.sql"
+ "supabase/migrations/20261013180000_customer_email_approvals.sql",
+ "supabase/migrations/20261014090000_fee_gate_log_only_on_change.sql"
 ];
 const migrationSql=[...migrationFiles,...additionalMigrationFiles].map(p=>readFileSync(join(root,p),"utf8"));
 const definitions=migrationSql.flatMap(functionDefs);
