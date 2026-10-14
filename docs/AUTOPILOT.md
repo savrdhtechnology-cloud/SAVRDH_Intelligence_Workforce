@@ -49,3 +49,16 @@ A manual trial of the autopilot never runs straight away. It is filed as a reque
 3. An owner or admin presses **Approve & run** (it runs immediately and the result is saved) or **Reject**. Requests expire after 72 hours. Every step is written to `audit_logs`.
 
 This gate covers manual trials only; the hourly autopilot keeps running unchanged.
+
+## Emails go through AKBS CRM (since 14 Oct)
+
+An approved reminder is no longer sent by the Workforce itself. It is handed to the AKBS CRM edge function `akbs-workforce-reminder` (AKBS Supabase project `ldffgetuzoeupuhoaubn`), which:
+
+- matches the AKBS lead by email (refuses if none or more than one),
+- applies AKBS's own checks (registration only before the application is submitted; fee reminder only while the fee is PENDING) and its 60-minute cooldown,
+- sends with AKBS's email settings and HTML template (sender `website@akbspoultry.com`),
+- writes `REGISTRATION_REMINDER_EMAILED` / `FEE_REMINDER_EMAILED` on the AKBS lead timeline as "AI Workforce · <agent>".
+
+Authentication: a random token kept only in the Workforce vault (`akbs_workforce_function_token`); AKBS stores only its SHA-256 (`akbs_crm.workforce_access`). AKBS's answer is recorded on the approval by `sav_ai_crm.reconcile_akbs_email_results()` at the start of every hourly cycle and is shown in Workflows → Customer messages.
+
+The 15 emails sent on 7–13 Oct went directly from `updates@akbspoultry.com`, not through AKBS CRM; they are not on the AKBS timeline and delivery is unconfirmed.

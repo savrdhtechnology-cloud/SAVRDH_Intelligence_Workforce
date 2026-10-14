@@ -26,3 +26,12 @@ test("admin shows customer email approvals with full text",()=>{
   assert.match(ui,/rpc\("sav_ai_crm_review_customer_email"/);
   assert.match(ui,/<pre>\{item\.body\}<\/pre>/);
 });
+
+test("AKBS reminders are sent by AKBS CRM, not by the Workforce directly",()=>{
+  const sql=readFileSync(new URL("../supabase/migrations/20261014120000_send_via_akbs_crm.sql",import.meta.url),"utf8");
+  const sender=sql.slice(sql.indexOf("create or replace function sav_ai_crm.send_autopilot_email"),sql.indexOf("create or replace function sav_ai_crm.reconcile_akbs_email_results"));
+  assert.match(sender,/functions\/v1\/akbs-workforce-reminder/);
+  assert.doesNotMatch(sender,/api\.resend\.com/);
+  assert.match(sender,/akbs_workforce_function_token/);
+  assert.match(sql,/reconcile_akbs_email_results/);
+});
