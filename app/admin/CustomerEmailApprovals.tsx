@@ -42,7 +42,7 @@ export default function CustomerEmailApprovals(){
   useEffect(()=>{void load();},[load]);
 
   async function review(item:EmailApproval,decision:"approve"|"reject"){
-    if(decision==="approve"&&!window.confirm(`Send this email to ${item.recipient} now?`)) return;
+    if(decision==="approve"&&!window.confirm(`Send this email to ${item.recipient} now through AKBS CRM?`)) return;
     setBusy(item.id);setError(null);
     const {data,error:rpcError}=await crmSupabase.rpc("sav_ai_crm_review_customer_email",{p_approval_id:item.id,p_decision:decision,p_note:notes[item.id]||null});
     if(rpcError) setError(rpcError.message);
@@ -61,7 +61,7 @@ export default function CustomerEmailApprovals(){
       <div><small>CUSTOMER EMAILS</small><h2>Email approvals ({pending.length} waiting)</h2></div>
       <button className="savos-ghost" onClick={()=>void load()} disabled={loading}><RefreshCw size={14}/> Refresh</button>
     </div>
-    <p>No email reaches an AKBS customer until an owner or admin approves it here. If the lead changes before you decide, the email is cancelled automatically and nothing is sent.</p>
+    <p>No email reaches an AKBS customer until an owner or admin approves it here. Approved emails are sent <b>by AKBS CRM itself</b> (its own sender, template and 60-minute limit) and appear on the AKBS lead timeline as “AI Workforce”. If the lead changes before you decide, the email is cancelled and nothing is sent.</p>
     {!canApprove&&!loading&&<div className="savos-hint"><ShieldCheck size={16}/> Only an owner or admin can approve customer emails.</div>}
     {error&&<div className="savos-error" role="alert"><XCircle size={16}/> {error}</div>}
 
