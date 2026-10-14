@@ -1,5 +1,6 @@
 "use client";
 
+import { apiUrl } from "../../../../lib/base-path";
 import { useEffect,useState } from "react";
 import { useParams } from "next/navigation";
 import { ArrowLeft,Bot,Mail,ListTodo,Network,RefreshCw } from "lucide-react";
@@ -36,7 +37,7 @@ export default function LeadSalesDetailPage(){
     const token=session.session?.access_token;
     if(!token){setMessage("Authentication required.");return;}
     setBusy(true); setMessage("");
-    const res=await fetch("/api/sales/email-drafts",{method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({leadId:params.id,agentId:agent.id})});
+    const res=await fetch(apiUrl("/api/sales/email-drafts"),{method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({leadId:params.id,agentId:agent.id})});
     const body=await res.json().catch(()=>({}));
     setBusy(false);
     setMessage(body.message||body.error||(res.ok?"Email draft generated.":"Unable to generate email draft."));
@@ -48,7 +49,7 @@ export default function LeadSalesDetailPage(){
     const token=session.session?.access_token;
     if(!token){setMessage("Authentication required.");return;}
     setBusy(true); setMessage("");
-    const res=await fetch(`/api/sales/email-drafts/${id}/approve-send`,{method:"POST",headers:{Authorization:`Bearer ${token}`}});
+    const res=await fetch(apiUrl(`/api/sales/email-drafts/${id}/approve-send`),{method:"POST",headers:{Authorization:`Bearer ${token}`}});
     const body=await res.json().catch(()=>({}));
     setBusy(false);
     setMessage(body?.send?.message||body.message||body.error||(res.ok?"Email sent.":"Email send unavailable."));

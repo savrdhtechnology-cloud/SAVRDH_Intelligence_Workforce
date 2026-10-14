@@ -61,8 +61,8 @@ export default function WorkflowsModule({focusedId}:{focusedId?:string}){
       const [{workflows:rows,metrics:m,templates:t},agentRes]=await Promise.all([
         listWorkflows(),crmSupabase.rpc("sav_ai_crm_agent_registry")
       ]);
-      setWorkflows(rows);setMetrics(m);setTemplates(t);setAgents(agentRes.data||[]);
-      const id=focusedId||preferred||selected||rows[0]?.id;
+      setWorkflows(Array.isArray(rows)?rows:[]);setMetrics(m||{});setTemplates(Array.isArray(t)?t:[]);setAgents(Array.isArray(agentRes.data)?agentRes.data:[]);
+      const id=focusedId||preferred||selected||(Array.isArray(rows)?rows[0]?.id:undefined);
       if(id){setSelected(id);const d=await getWorkflow(id);setDetail(d);setGraph({nodes:d.nodes||[],edges:d.edges||[]});}
       else{setSelected(undefined);setDetail(null);}
     }catch(e){setError(e instanceof Error?e.message:"Could not load workflows.");}
