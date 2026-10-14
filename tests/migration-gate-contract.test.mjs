@@ -38,7 +38,8 @@ const additionalMigrationFiles=[
  "supabase/migrations/20261013170000_trial_run_approvals.sql",
  "supabase/migrations/20261013180000_customer_email_approvals.sql",
  "supabase/migrations/20261014090000_fee_gate_log_only_on_change.sql",
- "supabase/migrations/20261014100000_agent_activity_overview.sql"
+ "supabase/migrations/20261014100000_agent_activity_overview.sql",
+ "supabase/migrations/20261014110000_run_and_message_log.sql"
 ];
 const migrationSql=[...migrationFiles,...additionalMigrationFiles].map(p=>readFileSync(join(root,p),"utf8"));
 const definitions=migrationSql.flatMap(functionDefs);
