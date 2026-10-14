@@ -22,3 +22,28 @@
 .workflow-node.connecting .studio-output-port{background:#358f7c;box-shadow:0 0 0 5px #2e88734d}
 .workflow-node:has(.studio-output-port){overflow:visible}
 .studio-panning,.studio-panning *{user-select:none}
+
+/* Full-size workflow editing workspace; existing engine and persistence unchanged */
+.workflow-studio-view-controls{display:flex;flex-wrap:wrap;gap:9px;justify-content:flex-end;margin:8px 0 14px}
+.workflow-studio-view-controls button{border:1px solid #2a6070;background:#112c3c;color:#c7edf5;border-radius:9px;padding:10px 13px;font-size:12px;cursor:pointer}
+.workflow-studio-view-controls button:hover,.workflow-studio-view-controls button:focus-visible{border-color:#5cdbd2;color:#fff}
+.workflow-fullscreen-mode{width:100%;min-width:0}
+.workflow-fullscreen-mode .workflow-metrics{display:flex;flex-wrap:wrap;gap:9px;margin:0 0 10px}
+.workflow-fullscreen-mode .workflow-metric{min-width:130px;flex:1;padding:9px 14px}
+.workflow-fullscreen-mode .workflow-layout{grid-template-columns:minmax(200px,230px) minmax(0,1fr);align-items:start}
+.workflow-fullscreen-mode .workflow-builder-wrap{grid-template-columns:minmax(150px,195px) minmax(0,1fr) minmax(205px,275px);min-height:clamp(600px,78vh,1000px)}
+.workflow-fullscreen-mode .workflow-canvas{min-height:clamp(580px,74vh,940px);touch-action:none}
+.workflow-fullscreen-mode .workflow-palette{max-height:clamp(580px,74vh,940px);overflow:auto}
+.workflow-fullscreen-mode .workflow-palette>b,.workflow-fullscreen-mode .workflow-inspector>b{font-size:13px}
+.workflow-fullscreen-mode .workflow-palette button{font-size:12px;min-height:37px}
+.workflow-fullscreen-mode .workflow-inspector{max-height:clamp(580px,74vh,940px);overflow:auto}
+.workflow-registry-hidden .workflow-list{display:none}
+.workflow-registry-hidden .workflow-layout{grid-template-columns:minmax(0,1fr)}
+.workflow-inspector-hidden .workflow-inspector{display:none}
+.workflow-inspector-hidden .workflow-builder-wrap{grid-template-columns:minmax(160px,195px) minmax(0,1fr)}
+.workflow-console-closed .studio-console-tabs,.workflow-console-closed .workflow-test-panel,.workflow-console-closed .workflow-history{display:none}
+.workflow-console-open .studio-console-tabs{margin-top:12px}
+.workflow-fullscreen-mode .workflow-node{min-width:185px}
+@media(max-width:1180px){.workflow-fullscreen-mode .workflow-layout{grid-template-columns:minmax(0,1fr)}.workflow-fullscreen-mode .workflow-list{display:flex;overflow:auto;max-height:170px}.workflow-registry-hidden .workflow-list{display:none}.workflow-fullscreen-mode .workflow-builder-wrap{grid-template-columns:160px minmax(0,1fr)}.workflow-fullscreen-mode .workflow-inspector{grid-column:1/-1;max-height:none}}
+@media(max-width:700px){.workflow-fullscreen-mode .workflow-builder-wrap,.workflow-inspector-hidden .workflow-builder-wrap{grid-template-columns:minmax(0,1fr)}.workflow-fullscreen-mode .workflow-canvas{min-height:65vh}.workflow-fullscreen-mode .workflow-palette{max-height:220px}.workflow-fullscreen-mode .workflow-studio-view-controls{justify-content:flex-start}}
+@media(prefers-reduced-motion:reduce){.workflow-studio-view-controls button{transition:none}}

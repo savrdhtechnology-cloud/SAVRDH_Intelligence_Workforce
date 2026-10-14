@@ -54,6 +54,10 @@ export default function WorkflowsModule({focusedId}:{focusedId?:string}){
     fee:JSON.stringify({lead:{id:"TEST-LEAD-001",status:"fee_pending"},payment:{status:"pending",amount:2999}},null,2),
   };
   const [nodeLogs,setNodeLogs]=useState(false);
+  const [studioExpanded,setStudioExpanded]=useState(true);
+  const [registryOpen,setRegistryOpen]=useState(true);
+  const [consoleOpen,setConsoleOpen]=useState(false);
+  const [inspectorOpen,setInspectorOpen]=useState(true);
 
   async function refresh(preferred?:string){
     setLoading(true);setError("");
@@ -141,11 +145,17 @@ export default function WorkflowsModule({focusedId}:{focusedId?:string}){
   if(loading&&!workflows.length)return <div className="workflow-loading"><Loader2 size={20} className="spin"/> Loading workflow engine...</div>;
 
   return <motion.div
-    className="workflow-module"
+    className={`workflow-module ${studioExpanded?"workflow-fullscreen-mode":""} ${registryOpen?"":"workflow-registry-hidden"} ${inspectorOpen?"":"workflow-inspector-hidden"} ${consoleOpen?"workflow-console-open":"workflow-console-closed"}`}
     initial={{opacity:0,y:8}}
     animate={{opacity:1,y:0}}
     transition={{duration:.35,ease:[.22,1,.36,1]}}
   >
+    <div className="workflow-studio-view-controls" role="toolbar" aria-label="Workflow workspace layout">
+      <button type="button" aria-pressed={studioExpanded} onClick={()=>setStudioExpanded(v=>!v)}>{studioExpanded?"Compact layout":"Expand workspace"}</button>
+      <button type="button" aria-expanded={registryOpen} onClick={()=>setRegistryOpen(v=>!v)}>{registryOpen?"Hide workflow list":"Show workflow list"}</button>
+      <button type="button" aria-expanded={inspectorOpen} onClick={()=>setInspectorOpen(v=>!v)}>{inspectorOpen?"Hide inspector":"Show inspector"}</button>
+      <button type="button" aria-expanded={consoleOpen} onClick={()=>setConsoleOpen(v=>!v)}>{consoleOpen?"Hide execution console":"Open execution console"}</button>
+    </div>
     <motion.div
       className="workflow-metrics"
       initial="hidden"
