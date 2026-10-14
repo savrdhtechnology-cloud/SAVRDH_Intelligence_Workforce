@@ -33,3 +33,14 @@ test("activity overview is read-only and not public",()=>{
   assert.doesNotMatch(sql,/\b(insert|update|delete)\b\s+(into\s+)?sav_ai_crm\./i);
   assert.match(sql,/revoke all on function public\.sav_ai_crm_agent_activity_overview\(\) from public, anon/);
 });
+
+test("workflow page is organised into what-happened, customer messages and builder",()=>{
+  const shell=read("app/crm/workflows/WorkflowsRouteShell.tsx");
+  for(const t of ["What happened","Customer messages","Workflow builder"]) assert.match(shell,new RegExp(t));
+  const act=read("app/crm/workflows/WorkflowActivity.tsx");
+  assert.match(act,/rpc\("sav_ai_crm_workflow_run_log"/);
+  assert.match(act,/rpc\("sav_ai_crm_customer_message_log"/);
+  const sql=read("supabase/migrations/20261014110000_run_and_message_log.sql");
+  assert.match(sql,/from public, anon;/);
+  assert.doesNotMatch(sql,/\b(insert into|update|delete from)\s+sav_ai_crm\./i);
+});
