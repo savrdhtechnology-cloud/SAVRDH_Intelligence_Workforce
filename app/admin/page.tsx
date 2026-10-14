@@ -7,6 +7,7 @@ import "./admin.css";
 import AppearanceStudio, {useSavedAdminAppearance} from "./AppearanceStudio";
 import TrialApprovals from "./TrialApprovals";
 import CustomerEmailApprovals from "./CustomerEmailApprovals";
+import AgentActivityMap from "./AgentActivityMap";
 
 type Section = "overview"|"factory"|"library"|"assignments"|"workflows"|"testing"|"executions"|"integrations"|"knowledge"|"approvals"|"analytics"|"settings"|"appearance";
 type Module = {id:Section; name:string; subtitle:string; icon:typeof Bot; href?:string};
@@ -72,8 +73,8 @@ export default function AdminWorkspace(){
     {!ready?<div className="savos-auth">Checking authentication…</div>:!crmSupabaseConfigured?<div className="savos-auth"><LockKeyhole size={22}/><h2>Configuration required</h2><p>Connect the existing Supabase environment to access the Admin workspace. The UI remains visible below as a design preview.</p></div>:!authenticated?<div className="savos-auth"><LockKeyhole size={22}/><h2>Sign in required</h2><p>Administrative actions require an authenticated Savrdh AI OS session.</p><Link href="/login">Open AI OS Login →</Link></div>:<div className="savos-auth-note"><ShieldCheck size={15}/> Authenticated workspace · Demo controls never execute external customer actions</div>}
     <div className="savos-content">
     {current==="overview"&&<>
-     <div className="savos-hero"><div><small>AI WORKFORCE CONTROL CENTER</small><h2>Build, assign and supervise your AI team.</h2><p>One admin workspace to develop agents, connect approved products, test workflows and review execution. This is the UI phase; no sample metric is represented as real production data.</p><button onClick={()=>setCurrent("factory")}><Plus size={17}/> Develop AI Agent</button></div><div className="savos-orbit"><BrainCircuit size={65}/><span>AGENT CONTROL</span></div></div>
-     <div className="savos-card-grid">{modules.filter(m=>m.id!=="overview").map(m=><button key={m.id} className="savos-module-card" onClick={()=>setCurrent(m.id)}><div className="savos-module-icon"><m.icon size={19}/></div><strong>{m.name}</strong><p>{m.subtitle}</p><ArrowRight size={16}/></button>)}</div>
+     <div className="savos-hero compact"><div><small>AI WORKFORCE CONTROL CENTER</small><h2>Your AI team, live.</h2><p>Every project, every agent and everything they did — straight from the live database. Use the menu on the left for the other modules.</p></div><button onClick={()=>setCurrent("factory")}><Plus size={17}/> Develop AI Agent</button></div>
+     <AgentActivityMap onOpen={s=>setCurrent(s)}/>
     </>}
     {current==="factory"&&<div className="savos-split">
      <section className="savos-panel"><div className="savos-section-title"><div><small>AGENT DEVELOPMENT</small><h2>Create AI Employee</h2></div><span className="savos-tag">Draft UI</span></div><p>Define the employee before provisioning its AI model, permissions, knowledge and product connectors.</p>

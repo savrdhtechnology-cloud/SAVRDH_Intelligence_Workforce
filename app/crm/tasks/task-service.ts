@@ -1,3 +1,4 @@
+import { apiUrl } from "../../../lib/base-path";
 import { crmSupabase } from "../supabase-client";
 import {
   TaskContext,
@@ -120,7 +121,7 @@ export async function runTaskWorkflow(taskId: string): Promise<any> {
   const token = sessionData.session?.access_token;
   if (!token) throw new Error("Authentication required.");
 
-  const response = await fetch(`/api/tasks/${taskId}/run`, {
+  const response = await fetch(apiUrl(`/api/tasks/${taskId}/run`), {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
